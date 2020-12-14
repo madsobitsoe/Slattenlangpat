@@ -14,6 +14,9 @@ codeGenerator.dll: codeGenerator.fs ast.dll
 	$(CC) $(CFLAGS) -r ast.dll -a codeGenerator.fs
 
 
+
+
+
 .PHONY: all
 all: parser.dll codeGenerator.dll slpc
 
@@ -21,3 +24,9 @@ all: parser.dll codeGenerator.dll slpc
 
 clean:
 	rm -f *.{exe,dll}
+
+
+.PHONE: examples
+examples: slpc examples/add1.slp examples/add_and_sub.slp
+	mono slpc.exe examples/add1.slp -o examples/add1
+	mono slpc.exe examples/add_and_sub.slp -o examples/add_and_sub
