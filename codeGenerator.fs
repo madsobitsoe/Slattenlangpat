@@ -317,7 +317,7 @@ let writeExecutableToDisk (filename:string) (bytes:byte []) =
     let allBytes = Array.append header prog
     try
         File.WriteAllBytes(filename, allBytes) |> ignore
-        sprintf "%d bytes generated and written to %s" (bytes.Length) filename |> Ok
+        sprintf "%d bytes generated and written to %s" (allBytes.Length) filename |> Ok
     with _ -> sprintf "Error when writing bytes to %s" filename |> Error
 
 let compileExpr : (Expr -> Result<byte [],string>)  =  (genCodeForExpr []) >> fst >> Ok
