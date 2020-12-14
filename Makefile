@@ -7,12 +7,15 @@ slpc: main.fs codeGenerator.dll
 
 ast.dll: ast.fs
 	$(CC) $(CFLAGS) -a ast.fs
+
+parser.dll: parser.fs
+	$(CC) $(CFLAGS) -r ast.dll -a parser.fs
 codeGenerator.dll: codeGenerator.fs ast.dll
 	$(CC) $(CFLAGS) -r ast.dll -a codeGenerator.fs
 
 
 .PHONY: all
-all: codeGenerator.dll slpc
+all: parser.dll codeGenerator.dll slpc
 
 .PHONY: clean
 
