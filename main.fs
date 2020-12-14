@@ -1,6 +1,8 @@
+open System.IO
+
 open CodeGenerator
 open AST
-
+open Parser
 
 let tmpAst1 =
     let e1 = Add (Const 1, Add (Const 2, (Add (Const 3, Add (Const 4, Const 5))))) in
@@ -19,19 +21,37 @@ let tmpAst4 =
 // Should print SLP\n
 let tmpAst5 = Print (Const 173034579)
 
+
+let readFile filename =
+    try File.ReadAllText filename |> Ok
+    with _ -> sprintf "Error when opening file %s." filename |> Error
+
+
+let readParseCompileAndWrite inputFilename outputFilename =
+    readFile inputFilename
+    |> Result.bind parse
+    |> Result.bind (compileAndWrite outputFilename)
+
+
 let usage = "Usage: slpc input.slp [-o executableName]"
+
 
 [<EntryPoint>]
 let main args =
-    match args with
+    let exitcode =
+        match args with
         | [|inputFilePath;"-o";outputFilePath|] ->
 
             printfn "Woohoo. Will compile %s and save as %s" inputFilePath outputFilePath
-            compileAndWrite tmpAst1 (outputFilePath + "_add")
-            compileAndWrite tmpAst2 (outputFilePath + "_sub")
-            compileAndWrite tmpAst3 (outputFilePath + "_sub_and_add")
-            compileAndWrite tmpAst4 (outputFilePath + "_sub_left_nest")
-            compileAndWrite tmpAst5 (outputFilePath + "_print_rax")
-        | _ -> printfn "%s" usage
+            match readParseCompileAndWrite inputFilePath outputFilePath with
+                | Ok msg -> printfn "%s" msg; 0
+                | Error err -> printfn "%s" err; 1
+            // compileAndWrite tmpAst1 (outputFilePath + "_add")
+            // compileAndWrite tmpAst2 (outputFilePath + "_sub")
+            // compileAndWrite tmpAst3 (outputFilePath + "_sub_and_add")
+            // compileAndWrite tmpAst4 (outputFilePath + "_sub_left_nest")
+            // compileAndWrite tmpAst5 (outputFilePath + "_print_rax")
+            // compileAndWrite camiAst "cami"
+        | _ -> printfn "%s" usage; 0
 
-    0
+    exitcode

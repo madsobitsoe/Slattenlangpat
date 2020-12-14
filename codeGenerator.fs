@@ -310,12 +310,17 @@ let genExit statusCode : byte [] =
      |]
 
 
-let writeExecutableToDisk (bytes:byte []) (filename:string) =
+let writeExecutableToDisk (filename:string) (bytes:byte []) =
     // let body,regsLeft = genCodeForExpr [] (Add (Add (Const 1,Const 2), (Add (Const 3, Const 4) )))
     let prog = Array.append bytes <| genExit 0
     let header = genHeader prog
     let allBytes = Array.append header prog
-    File.WriteAllBytes(filename, allBytes)
+    try
+        File.WriteAllBytes(filename, allBytes) |> ignore
+        sprintf "%d bytes generated and written to %s" (bytes.Length) filename |> Ok
+    with _ -> sprintf "Error when writing bytes to %s" filename |> Error
 
-let compileExpr = (genCodeForExpr []) >> fst
-let compileAndWrite = (compileExpr >> writeExecutableToDisk)
+let compileExpr : (Expr -> Result<byte [],string>)  =  (genCodeForExpr []) >> fst >> Ok
+let compileAndWrite filename =
+    compileExpr
+    >> Result.bind (writeExecutableToDisk filename)

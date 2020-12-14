@@ -2,8 +2,8 @@ CC=fsharpc
 CFLAGS=--nologo
 
 
-slpc: main.fs codeGenerator.dll
-	$(CC) $(CFLAGS) -r codeGenerator.dll main.fs -o slpc.exe
+slpc: main.fs parser.dll codeGenerator.dll
+	$(CC) $(CFLAGS) -r parser.dll -r codeGenerator.dll main.fs -o slpc.exe
 
 ast.dll: ast.fs
 	$(CC) $(CFLAGS) -a ast.fs

@@ -1,9 +1,22 @@
 module Parser
 open AST
 
-// library part
-type Parser<'T> = Parser of (string -> Result<'T, string>)
 
+// --------------------------------
+// helper functions
+// --------------------------------
+
+// chars to string
+let (csToS : char list -> string) = List.fold (fun acc x -> string x |> (+) acc ) ""
+
+
+
+// --------------------------------
+// library part
+// --------------------------------
+
+type Parser<'T> = Parser of (string -> Result<'T, string>)
+type BinOp = (Expr -> Expr -> Expr)
 
 let run parser input =
     let (Parser parse) = parser
@@ -40,6 +53,8 @@ let (.>>.) p1 p2 =
                     | Ok (res2,rem2) ->
                         Ok ((res1,res2),rem2)
     Parser inner
+
+
 // Keep left side
 let (.>>) p1 p2 =
     p1 .>>. p2 |> mapP (fun (a,b) -> a)
@@ -172,17 +187,9 @@ let chainr1 p op =
 
 
 
-// --------------------------------
-// helper functions
-// --------------------------------
-
-// chars to string
-let (csToS : char list -> string) = List.fold (fun acc x -> string x |> (+) acc ) ""
-
-
 
 // --------------------------------
-// SLP-parsers
+// SLP-parsers, types and definitions
 // --------------------------------
 
 let ws = let wsChars = anyOf [' ';'\n';'\t'] in many1 wsChars
@@ -205,11 +212,10 @@ let betweenParen p = between pParen p pCParen
 
 
 
-let pConst : Parser<Expr*string> = many1 pDigit |> mapP (csToS >> int >> Const)
+let pConst = many1 pDigit |> mapP (csToS >> int >> Const)
 let pAdd = sepBy pConst pPlus  |>> List.reduce (fun a b ->  Add (a,b))
 let pSub = sepBy pConst pMinus |>> List.reduce (fun a b ->  Sub (a,b))
-type BinOp = Parser<(Expr -> Expr -> Expr) * string>
-let pBinOp : BinOp =
+let pBinOp =
     let inner input =
         match run pPlus input with
             | Ok (_,rem) -> Ok ( (fun a b -> Add (a,b)), rem)
@@ -234,3 +240,9 @@ let pExprRightAssoc = chainr1 pConst pBinOp
 // run pExprRightAssoc "1+2+3"
 // run pExprRightAssoc "1-2-3-4"
 // run pExprRightAssoc "1+2+3+4-5+6-7-8-1+90"
+
+
+let parse (program:string) : Result<Expr,string> =
+    match run pExpr program with
+        | Ok (res:Expr,rem:string) -> Ok res
+        | Error err -> Error err
