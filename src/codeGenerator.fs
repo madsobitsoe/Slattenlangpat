@@ -311,7 +311,6 @@ let genExit statusCode : byte [] =
 
 
 let writeExecutableToDisk (filename:string) (bytes:byte []) =
-    // let body,regsLeft = genCodeForExpr [] (Add (Add (Const 1,Const 2), (Add (Const 3, Const 4) )))
     let prog = Array.append bytes <| genExit 0
     let header = genHeader prog
     let allBytes = Array.append header prog
