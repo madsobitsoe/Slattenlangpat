@@ -3,8 +3,12 @@ CFLAGS=--nologo
 
 slpc.exe:
 	fsharpc src/ast.fs src/parser.fs src/codeGenerator.fs src/main.fs -o slpc.exe
-.PHONY: slpc.exe examples
-all: ast.dll parser.dll codeGenerator.dll slpc.exe
+
+
+
+test: src/tests/parserTests.fs
+	fsharpc src/ast.fs src/parser.fs src/tests/parserTests.fs
+	mono parserTests.exe
 
 
 
