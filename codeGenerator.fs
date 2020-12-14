@@ -34,9 +34,15 @@ let getEmptyRegister (usedRegisters:Register list) =
     emptyReg,emptyReg::usedRegisters
 
 let registerToByteMov register =
+    let offset = 0xb8
     match register with
-        | RAX -> 0xb8uy
-        | RCX -> 0xb9uy
+        | RAX -> 0 + offset |> byte
+        | RCX -> 1 + offset |> byte
+        | RDX -> 2 + offset |> byte
+        | RBX -> 3 + offset |> byte
+        | RSI -> 4 + offset |> byte
+        | RSP -> 5 + offset |> byte
+        | RBP -> 6 + offset |> byte
         | _ -> failwith <| sprintf "MOV FOR %A NOT YET IMPLEMENTED." register
 
 
@@ -63,10 +69,11 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
         | Const i ->
             // mov rax, imm
             let reg,usedRegisters' = getEmptyRegister usedRegisters
+            // mov imm to r*x
             let byteCodeReg = registerToByteMov reg
-            [|byteCodeReg; // mov imm to r*x
-             byte i;0x00uy;
-             0x00uy;0x00uy|],usedRegisters'
+            (Array.append [|byteCodeReg|] (System.BitConverter.GetBytes i)),usedRegisters'
+             // byte i;0x00uy;
+             // 0x00uy;0x00uy|],usedRegisters'
         | Add (e1,e2) ->
             match (e1,e2) with
                 | Const i1, Const i2 ->
@@ -237,7 +244,7 @@ let genExit statusCode : byte [] =
      |]
 
 let writeExecutableToDisk (filename:string) (bytes:byte []) =
-    let body,regsLeft = genCodeForExpr [] (Sub (Const 1,Const 2))
+    let body,regsLeft = genCodeForExpr [] (Sub (Const 1073741821,Const 1073741824))
     let prog = Array.append body <| genExit 42
     let header = genHeader prog
     let allBytes = Array.append header prog
