@@ -210,8 +210,6 @@ let betweenParen p = between pParen p pCParen
 
 
 
-
-
 let pConst = many1 pDigit |> mapP (csToS >> int >> Const)
 let pAdd = sepBy pConst pPlus  |>> List.reduce (fun a b ->  Add (a,b))
 let pSub = sepBy pConst pMinus |>> List.reduce (fun a b ->  Sub (a,b))
@@ -226,6 +224,7 @@ let pBinOp =
     Parser inner
 
 let pExpr = chainl1 pConst pBinOp
+// Not used, but might be useful at some point
 let pExprRightAssoc = chainr1 pConst pBinOp
 
 // Various "tests" of chainl and chainr
