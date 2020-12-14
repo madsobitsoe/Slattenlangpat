@@ -10,6 +10,7 @@ type Register =
     | RDX
     | RBX
     | RSI
+    | RDI
     | RSP
     | RBP
     | R8
@@ -21,14 +22,13 @@ type Register =
     | R14
     | R15
 
-let allRegisters = set [RAX; RCX; RDX; RBX; RSI; RSP; RBP; R8; R9; R10; R11; R12; R13; R14; R15; ]
 
+let allRegisters:Set<Register> = set [RAX; RCX; RDX; RBX; RSI; RDI; RSP; RBP; R8; R9; R10; R11; R12; R13; R14; R15; ]
+let allArithRegisters:Set<Register> = allRegisters - (set [RBP;RSP])
 
-//let getEmptyRegister (usedRegisters:Set<Register>) =
 let getEmptyRegister (usedRegisters:Register list) =
     let emptyReg =
-        allRegisters - (set usedRegisters)
-        // |> Set.difference allRegisters
+        allArithRegisters - (set usedRegisters)
         |> Set.toList
         |> List.head
     emptyReg,emptyReg::usedRegisters
@@ -40,22 +40,24 @@ let registerToByteMov register =
         | RCX -> 1 + offset |> byte
         | RDX -> 2 + offset |> byte
         | RBX -> 3 + offset |> byte
-        | RSI -> 4 + offset |> byte
-        | RSP -> 5 + offset |> byte
-        | RBP -> 6 + offset |> byte
+        | RSI -> 6 + offset |> byte
+        | RDI -> 7 + offset |> byte
+        // | RSP -> 5 + offset |> byte
+        // | RBP -> 6 + offset |> byte
         | _ -> failwith <| sprintf "MOV FOR %A NOT YET IMPLEMENTED." register
 
 
 
 let MOD = 0x3 <<< 6
-let regToBits = function
+let regToBits : (Register -> int) = function
     | RAX -> 0
     | RCX -> 1
     | RDX -> 2
     | RBX -> 3
-    | RSI -> 4
-    | RSP -> 5
-    | RBP -> 6
+    | RSP -> 4
+    | RBP -> 5
+    | RSI -> 6
+    | RDI -> 7
     | reg -> failwith <| sprintf "Register %A doesn't fit in 3 bits - not implemented yet" reg
 
 let regToRM = regToBits >> (fun x -> x <<< 3)
@@ -63,20 +65,19 @@ let regToRM = regToBits >> (fun x -> x <<< 3)
 // --------------------------------
 // CODE GENERATION
 // --------------------------------
-//let rec genCodeForExpr (usedRegisters:Set<Register>) (e:Expr) : (byte [] * Set<Register>) =
+
 let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Register list) =
     match e with
         | Const i ->
+            printfn "Generating mov for %A\tRegs in use: %A" e usedRegisters
             // mov rax, imm
             let reg,usedRegisters' = getEmptyRegister usedRegisters
             // mov imm to r*x
+            printfn "mov %A into %A\tRegs in use: %A" i reg usedRegisters'
             let byteCodeReg = registerToByteMov reg
             (Array.append [|byteCodeReg|] (System.BitConverter.GetBytes i)),usedRegisters'
-             // byte i;0x00uy;
-             // 0x00uy;0x00uy|],usedRegisters'
         | Add (e1,e2) ->
-            match (e1,e2) with
-                | Const i1, Const i2 ->
+                    printfn "Generating ADD for %A\tRegs in use: %A" e usedRegisters
                     // ADD r/m16/32/64	r16/32/64 has opcode 1
                     // To generate an add, I need to know which registers to add
                     // So I can generate the following byte (that indicates registers)
@@ -89,12 +90,18 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
                     // 0x01 (0xc1 - 0x01 + 0x05) -> add ebp, eax
                     let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
                     // Wow, nooot pretty. TODO REPLACE
+                    // ex1Reg *should* contain result of computing e1.
+                    // Assume I can do what I want with all other regs used exclusively in computation of e1
                     let ex1Reg = List.head usedRegisters'
+                    printfn "ex1: %A" e1
                     printfn "Reg for ex1: %A" ex1Reg
+                    printfn "Regs used by ex1: %A" usedRegisters'
                     let ex2Bytes,usedRegisters'' = genCodeForExpr usedRegisters' e2
                     // Wow, nooot pretty. TODO REPLACE
                     let ex2Reg = List.head usedRegisters''
+                    printfn "ex2: %A" e2
                     printfn "Reg for ex2: %A" ex2Reg
+                    printfn "Regs used at ex2: %A" usedRegisters''
                     let firstBytes = Array.append ex1Bytes ex2Bytes
                     let add = 0x1uy
                     let addMOD = MOD
@@ -102,31 +109,62 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
                     let addRM = regToRM ex2Reg
                     let addFollowByte = addMOD + addRM + addREG |> byte
                     printfn "Follow byte generated: %x" addFollowByte
-                    (Array.append firstBytes [|add;addFollowByte|]), usedRegisters''
-                | _ -> failwith "Uh Oh - Add only works with const expressions for now."
+                    (Array.append firstBytes [|add;addFollowByte|]), usedRegisters'
         | Sub (e1,e2) ->
-            match (e1,e2) with
-                | Const i1, Const i2 ->
-            // SUB r/m16/32/64	r16/32/64 has opcode 2b
-            // To generate a SUB, I need to know which registers to add
-            // So I can generate the following byte (that indicates registers)
-                    let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
-                    // Wow, nooot pretty. TODO REPLACE
-                    let ex1Reg = List.head usedRegisters'
-                    printfn "Reg for ex1: %A" ex1Reg
-                    let ex2Bytes,usedRegisters'' = genCodeForExpr usedRegisters' e2
-                    // Wow, nooot pretty. TODO REPLACE
-                    let ex2Reg = List.head usedRegisters''
-                    printfn "Reg for ex2: %A" ex2Reg
-                    let firstBytes = Array.append ex1Bytes ex2Bytes
-                    let sub = 0x29uy
-                    let subMOD = MOD
-                    let subREG = regToBits ex1Reg
-                    let subRM = regToRM ex2Reg
-                    let subFollowByte = subMOD + subRM + subREG |> byte
-                    printfn "Follow byte generated: %x" subFollowByte
-                    (Array.append firstBytes [|sub;subFollowByte|]), usedRegisters''
-                | _ -> failwith "Uh Oh - SUB only works with const expressions for now."
+            // match (e1,e2) with
+                // | Const i1, Const i2 ->
+                //     printfn "Generating SUB for %A\tRegs in use: %A" e usedRegisters
+                //     // SUB r/m16/32/64	r16/32/64 has opcode 2b
+                //     // To generate a SUB, I need to know which registers to add
+                //     // So I can generate the following byte (that indicates registers)
+                //     let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
+                //     // Wow, nooot pretty. TODO REPLACE
+                //     let ex1Reg = List.head usedRegisters'
+                //     printfn "Reg for ex1: %A" ex1Reg
+                //     let ex2Bytes,usedRegisters'' = genCodeForExpr usedRegisters' e2
+                //     // Wow, nooot pretty. TODO REPLACE
+                //     let ex2Reg = List.head usedRegisters''
+                //     printfn "Reg for ex2: %A" ex2Reg
+                //     let firstBytes = Array.append ex1Bytes ex2Bytes
+                //     let sub = 0x29uy
+                //     let subMOD = MOD
+                //     let subREG = regToBits ex1Reg
+                //     let subRM = regToRM ex2Reg
+                //     let subFollowByte = subMOD + subRM + subREG |> byte
+                //     printfn "Follow byte generated: %x" subFollowByte
+                //     (Array.append firstBytes [|sub;subFollowByte|]), usedRegisters''
+                // | _ -> failwith "Uh Oh - SUB only works with const expressions for now."
+            printfn "Generating SUB for %A\tRegs in use: %A" e usedRegisters
+            let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
+            // Wow, nooot pretty. TODO REPLACE
+            // ex1Reg *should* contain result of computing e1.
+            // Assume I can do what I want with all other regs used exclusively in computation of e1
+            let ex1Reg = List.head usedRegisters'
+            printfn "ex1: %A" e1
+            printfn "Reg for ex1: %A" ex1Reg
+            printfn "Regs used by ex1: %A" usedRegisters'
+            let ex2Bytes,usedRegisters'' = genCodeForExpr usedRegisters' e2
+            // Wow, nooot pretty. TODO REPLACE
+            let ex2Reg = List.head usedRegisters''
+            printfn "ex2: %A" e2
+            printfn "Reg for ex2: %A" ex2Reg
+            printfn "Regs used at ex2: %A" usedRegisters''
+            let firstBytes = Array.append ex1Bytes ex2Bytes
+            let sub = 0x29uy
+            let subMOD = MOD
+            let subREG = regToBits ex1Reg
+            let subRM = regToRM ex2Reg
+            let subFollowByte = subMOD + subRM + subREG |> byte
+            printfn "Follow byte generated: %x" subFollowByte
+            (Array.append firstBytes [|sub;subFollowByte|]), usedRegisters'
+        // | Print e ->
+        //     let eBytes,usedRegisters' =  genCodeForExpr usedRegisters e
+            // Now generate some code to print whatever is in the last used register
+            // It will need to be converted to a "string" eventually
+
+
+
+        // For future use, when I update the AST and forget all about it
         | _ -> failwith "Uh Oh"
 
 
@@ -243,9 +281,13 @@ let genExit statusCode : byte [] =
      0x05uy;
      |]
 
-let writeExecutableToDisk (filename:string) (bytes:byte []) =
-    let body,regsLeft = genCodeForExpr [] (Sub (Const 1073741821,Const 1073741824))
-    let prog = Array.append body <| genExit 42
+
+let writeExecutableToDisk (bytes:byte []) (filename:string) =
+    // let body,regsLeft = genCodeForExpr [] (Add (Add (Const 1,Const 2), (Add (Const 3, Const 4) )))
+    let prog = Array.append bytes <| genExit 0
     let header = genHeader prog
     let allBytes = Array.append header prog
     File.WriteAllBytes(filename, allBytes)
+
+let compileExpr = (genCodeForExpr []) >> fst
+let compileAndWrite = (compileExpr >> writeExecutableToDisk)
