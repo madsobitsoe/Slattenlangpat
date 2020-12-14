@@ -66,6 +66,30 @@ let regToRM = regToBits >> (fun x -> x <<< 3)
 // CODE GENERATION
 // --------------------------------
 
+// hacky way to print rax
+// Move n into rax
+let MOVRAX (n:int) = Array.append [|registerToByteMov RAX|] <| System.BitConverter.GetBytes n
+let MOVRDX (n:int) = Array.append [|registerToByteMov RDX|] <| System.BitConverter.GetBytes n
+let MOVRDI (n:int) = Array.append [|registerToByteMov RDI|] <| System.BitConverter.GetBytes n
+let MOVRSIRSP = [|0x48uy;0x89uy;0xe6uy|]
+let PUSHRAX = [|0x50uy|]
+// Bytes for a syscall instruction
+let SYSCALL = [|0x0fuy; 0x05uy;|]
+
+// Write n bytes located at $rsp
+let SYS_WRITE n =
+    // rdi = 1 for STDOUT
+    let rdi = MOVRDI 1 // STDOUT
+    let rax = MOVRAX 1 // SYS_WRITE
+    let rdx = MOVRDX n
+    Array.append rax SYSCALL
+    |> Array.append rdx
+    |> Array.append MOVRSIRSP
+    |> Array.append rdi
+    |> Array.append PUSHRAX
+
+
+// General expressions
 let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Register list) =
     match e with
         | Const i ->
@@ -157,12 +181,16 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             let subFollowByte = subMOD + subRM + subREG |> byte
             printfn "Follow byte generated: %x" subFollowByte
             (Array.append firstBytes [|sub;subFollowByte|]), usedRegisters'
-        // | Print e ->
-        //     let eBytes,usedRegisters' =  genCodeForExpr usedRegisters e
+        | Print e ->
+            printfn "Generating code for printing rax."
+            let eBytes,usedRegisters' =  genCodeForExpr usedRegisters e
+            let sys_writeBytes = SYS_WRITE 8
+            Array.append eBytes (Array.append [|0x90uy;0x90uy;0x90uy;0x90uy;0x90uy;|] sys_writeBytes), usedRegisters'
             // Now generate some code to print whatever is in the last used register
             // It will need to be converted to a "string" eventually
-
-
+            // For now, just generate the bytes to write "HELLO FROM SLPC!\n" from stack
+            // main problem is that to print, I need pointers,
+            // and to have pointers, I need memory
 
         // For future use, when I update the AST and forget all about it
         | _ -> failwith "Uh Oh"

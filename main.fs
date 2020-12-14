@@ -16,6 +16,9 @@ let tmpAst3 =
 let tmpAst4 =
     Sub (Sub (Sub (Sub (Sub (Const 15, Const 5), Const 4), Const 3), Const 2), Const 1)
 
+// Should print SLP\n
+let tmpAst5 = Print (Const 173034579)
+
 let usage = "Usage: slpc input.slp [-o executableName]"
 
 [<EntryPoint>]
@@ -28,6 +31,7 @@ let main args =
             compileAndWrite tmpAst2 (outputFilePath + "_sub")
             compileAndWrite tmpAst3 (outputFilePath + "_sub_and_add")
             compileAndWrite tmpAst4 (outputFilePath + "_sub_left_nest")
+            compileAndWrite tmpAst5 (outputFilePath + "_print_rax")
         | _ -> printfn "%s" usage
 
     0
