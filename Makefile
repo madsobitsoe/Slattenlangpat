@@ -27,6 +27,6 @@ clean:
 
 
 .PHONY: examples
-examples: slpc examples/add1.slp examples/add_and_sub.slp
+examples: slpc.exe examples/add1.slp examples/add_and_sub.slp
 	mono slpc.exe examples/add1.slp -o examples/add1
 	mono slpc.exe examples/add_and_sub.slp -o examples/add_and_sub
