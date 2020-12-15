@@ -75,6 +75,13 @@ let rec eval':(Expr * Environment -> Eval) = function
         // Expressions are evaluated before they are stored in an environment.
         // We should definitely have a value type
     | Var (name),env -> env name >>= (fun res -> eval' (res,env))
+    | Let (name,e1,inExpr),env ->
+        // Evaluate e1 in current env before storing the result - then wrap it in Const. (We NEED a value type)
+        eval' (e1,env)
+        >>= (fun x ->
+             let newEnv = extendEnv name (Const x) env
+             eval' (inExpr,newEnv)
+             )
     | unimplemented -> sprintf "The expression '%A' is sadly not implemented yet. \nCheck https://github.com/madsobitsoe/Slattenlangpat/issues and maybe add an issue or submit a pull request." (fst unimplemented) |> Error
 // The "public" api.
 let eval = function | x -> eval' (x,initEnv)
