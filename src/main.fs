@@ -17,28 +17,31 @@ let readParseCompileAndWrite inputFilename outputFilename =
     |> Result.bind (compileAndWrite outputFilename)
 
 
-let rec repl () =
+let rec repl handler =
     do printf "SLPi> "
     match System.Console.ReadLine() with
     | "exit" | "q" | "quit" -> ()
     | input ->
         parse input
         |> Result.bind eval
-        |> Result.bind (fun x -> printfn "%d" x; Ok x )
-        |> ignore; repl ()
-
+        |> handler; repl handler
 
 let repl' () =
     let replmsg =
           "Starting SLP interactive mode..."
         + "type exit, quit or q to quit"
     printfn "%s" replmsg
-    repl ()
+    let handler res =
+        match res with
+            | Ok res -> printfn "%d" res
+            | Error msg -> printfn "%s" msg
+    repl handler
     0
+
+
 let usage =
       "Usage: \n\tslpc input.slp [-o executableName]"
     + "\tInteractive mode: slpc -i"
-
 
 [<EntryPoint>]
 let main args =

@@ -9,9 +9,6 @@ type Eval = Result<EvalResult,EvalError>
 // infix for Result.bind, so it looks like I know what I'm doing.
 let ( >>= ) r f = r |> Result.bind f
 
-let a : Result<int,string> = Ok 1
-a >>= (fun x -> Ok x)
-
 
 // An environment is a function
 type Environment = VName -> Result<Expr,string>
@@ -40,8 +37,12 @@ let lookup name env = env name
 let rec eval':(Expr * Environment -> Eval) = function
     | ((Const i),env) -> Ok i
     | Add (e1,e2), env ->
-        eval' (e1,env) >>=
-            (fun e1res ->
+        let res1 = eval' (e1,env)
+        match res1 with
+            | Error err -> Error err
+            | good ->
+                good >>=
+                    (fun e1res ->
                      eval' (e2,env) >>= (fun e2res -> e1res + e2res |> Ok))
 
     | Sub (e1,e2),env ->
@@ -77,10 +78,14 @@ let rec eval':(Expr * Environment -> Eval) = function
     | Var (name),env -> env name >>= (fun res -> eval' (res,env))
     | Let (name,e1,inExpr),env ->
         // Evaluate e1 in current env before storing the result - then wrap it in Const. (We NEED a value type)
-        eval' (e1,env)
-        >>= (fun x ->
-             let newEnv = extendEnv name (Const x) env
-             eval' (inExpr,newEnv)
+        let res1 = eval' (e1,env)
+        match res1 with
+            | Error err -> Error err
+            | good ->
+                good >>= (fun x ->
+                          let newEnv = extendEnv name (Const x) env
+                          printfn "env: %A\nnewEnv %A" env newEnv
+                          eval' (inExpr,newEnv)
              )
     | unimplemented -> sprintf "The expression '%A' is sadly not implemented yet. \nCheck https://github.com/madsobitsoe/Slattenlangpat/issues and maybe add an issue or submit a pull request." (fst unimplemented) |> Error
 // The "public" api.
