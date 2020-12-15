@@ -25,6 +25,18 @@ let run parser input =
 
 
 
+// Create a forward reference to a dummy parser, to handle mutually recursive parsers
+let createParserForwardedToRef<'T>() =
+    let dummy =
+        let inner input : Result<'T,string> = failwith "unfixed forwarded parser"
+        Parser inner
+    // ref cell to dummy parser
+    let parserRef = ref dummy
+    // Wrapper parser
+    let inner input =
+        run !parserRef input
+    (Parser inner, parserRef)
+
 let satisfy predicate =
     let inner input =
         if String.IsNullOrEmpty(input) then
@@ -244,13 +256,13 @@ let isLetter : char -> bool = (int >> fun x ->
                                (0x61 <= x && x <= 0x7a))
 let pLetter = satisfy isLetter
 let isLetterOrDigit = pLetter <|> pDigit
-let pPlus = pChar '+' .>> many whitespace
-let pMinus = pChar '-' .>> many whitespace
-let pEquals = pChar '=' .>> many whitespace
-let pParen = pChar '('
-let pCParen = pChar ')'
+let pPlus = many whitespace >>. pChar '+' .>> many whitespace
+let pMinus = many whitespace >>. pChar '-' .>> many whitespace
+let pEquals = many whitespace >>. pChar '=' .>> many whitespace
+let pLParen = many whitespace >>. pChar '(' .>> many whitespace
+let pRParen = many whitespace >>. pChar ')' .>> many whitespace
 
-let betweenParen p = between pParen p pCParen
+let betweenParen p = between pLParen p pRParen
 
 // Parse an identifier, i.e. VName
 let pIdent =
@@ -280,32 +292,50 @@ let pBinOp =
 
 
 // generate left-associative arithmetic expressions
-let pArithExpr =
-    chainl1 (pConst <|> pVar) pBinOp
+// let pArithExpr =
+//     chainl1 (pConst <|> pVar) pBinOp
 
-// Generate Print expressions
-let pPrintExpr =
-    keyword (pString "print") >>. pArithExpr |> mapP (fun x -> Print x)
 
 // Not used, but might be useful at some point
 //let pExprRightAssoc = chainr1 pConst pBinOp
 
 
-// Does not allow for nested lets. Have to fix that at some point
+
+
+// Deal with F# stupid non-lazyness and freaky (sane) rules for mutually recursive definitions
+// In haskell this would just work, grr.
+// Define a parser, that dereferences a reference to another parser and uses that.
+// The parser, pExpr, is defined here, so it can can be used by pExprT2 and pExpr T1.
+// The actual parser, i.e. the reference, is set up after the parsers that need to know about it.
+let pExpr,pExprRef = createParserForwardedToRef<Expr*string>()
+
+// Let-expressions contain expressions, so the parser should be defined after the expression parser.
 let pLetExpr =
     let f name e1 e2 = Let (name,e1,e2)
     let idP = keyword (pString "let") >>. pIdent .>> (skipMany whitespace .>>. pEquals .>>. skipMany whitespace)
-    let e1P = pArithExpr .>> separator
-    let e2P = keyword (pString "in") >>. pArithExpr .>> many whitespace
+    let e1P = pExpr .>> separator
+    let e2P = keyword (pString "in") >>. pExpr .>> many whitespace
     returnP f <*> idP <*> e1P <*> e2P
 
-let pExpr =
-    pPrintExpr
-    <|> pLetExpr
-    <|> pArithExpr
+// Generate Print expressions
+let pPrintExpr =
+    keyword (pString "print") >>. pExpr |> mapP (fun x -> Print x)
 
+
+let pExprT2 =
+    chainl1 (betweenParen pExpr) pBinOp
+let pExprT1 =
+    pConst
+    <|> pVar
+    <|> pLetExpr
+    <|> pPrintExpr
+    <|> pExprT2
+
+// Set up the actual top-level parser, so it can be used recursively by sub-parsers
+pExprRef := choice [chainl1 pExprT1 pBinOp; pExprT1]
 
 let parse (program:string) : Result<Expr,string> =
+
     match run pExpr program with
         | Ok (res:Expr,rem:string) -> Ok res
         | Error err -> Error err
