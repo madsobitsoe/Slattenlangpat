@@ -18,15 +18,23 @@ let readParseCompileAndWrite inputFilename outputFilename =
 
 
 let rec repl () =
-    do printf "SLP> "
+    do printf "SLPi> "
     match System.Console.ReadLine() with
-    | "exit" -> ()
+    | "exit" | "q" | "quit" -> ()
     | input ->
         parse input
         |> Result.bind eval
         |> Result.bind (fun x -> printfn "%d" x; Ok x )
         |> ignore; repl ()
 
+
+let repl' () =
+    let replmsg =
+          "Starting SLP interactive mode..."
+        + "type exit, quit or q to quit"
+    printfn "%s" replmsg
+    repl ()
+    0
 let usage =
       "Usage: \n\tslpc input.slp [-o executableName]"
     + "\tInteractive mode: slpc -i"
@@ -36,7 +44,7 @@ let usage =
 let main args =
     let exitcode =
         match args with
-        | [|"-i"|] -> printfn "Starting SLP interactive mode..."; repl (); 0
+        | [|"-i"|] ->  repl' ()
         | [|inputFilePath;"-o";outputFilePath|] ->
 
             printfn "Will compile %s and save as %s" inputFilePath outputFilePath
