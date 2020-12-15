@@ -150,7 +150,6 @@ let chainl1 p op =
     let inner input =
         let parseSingle = run p input
         let rec parsePair p op prev =
-            printfn "called! %A" prev
             match prev with
                 | Error err -> Error err
                 | Ok (res,rem) ->
