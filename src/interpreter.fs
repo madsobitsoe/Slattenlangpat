@@ -84,7 +84,6 @@ let rec eval':(Expr * Environment -> Eval) = function
             | good ->
                 good >>= (fun x ->
                           let newEnv = extendEnv name (Const x) env
-                          printfn "env: %A\nnewEnv %A" env newEnv
                           eval' (inExpr,newEnv)
              )
     | unimplemented -> sprintf "The expression '%A' is sadly not implemented yet. \nCheck https://github.com/madsobitsoe/Slattenlangpat/issues and maybe add an issue or submit a pull request." (fst unimplemented) |> Error
