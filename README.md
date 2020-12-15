@@ -26,7 +26,7 @@ It generates dependency-free binaries. No LibC here.
 As of now, a valid expression (i.e. program) is of the form: 
 `[0-9]+([+-][0-9]+)+`
 Neither print nor whitespace is supported (yet). 
-Since the language can't really do anythin right now, no biggie. 
+Since the language can't really do anything right now, no biggie. 
 
 See the examples/ folder for .slp-program sources. 
 
