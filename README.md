@@ -50,6 +50,12 @@ abc
 ```
 The above prints 10 last, because the REPL prints the result of evaluating the expression. `print 10` or `let x = 10 in print x` is thus "equivalent" to `let x = 10 in printf "%c" (char x); x` in F\#.
 
+#### Hello, World!
+This means we can finally write a "Hello world!"-program. 
+(Which doesn't work in the compiler - yet).
+```
+(print 65 + 7) + (print 101) + (print 108) + (print 108) + (print 111) + (print 10)
+```
 
 
 ## Building
