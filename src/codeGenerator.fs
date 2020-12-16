@@ -1,6 +1,7 @@
 module CodeGenerator
 
 open AST
+// BitConverter.GetBytes
 open System.IO
 
 
@@ -23,6 +24,39 @@ type Register =
     | R15
 
 
+type Instruction = MOV | ADD | SUB | PUSH | POP
+type Operand = REG of Register | IMM of int
+
+// Create the MOD bits. Right now, all is Reg -> Reg
+let MOD = 0x3 <<< 6
+// Convert a register to a 3-bit value to be used in the RM/Mod byte
+let regToBits : (Register -> int) = function
+    | RAX -> 0
+    | RCX -> 1
+    | RDX -> 2
+    | RBX -> 3
+    | RSP -> 4
+    | RBP -> 5
+    | RSI -> 6
+    | RDI -> 7
+    | reg -> failwith <| sprintf "Register %A doesn't fit in 3 bits - not implemented yet" reg
+
+let regToRM = regToBits >> (fun x -> x <<< 3)
+
+
+let genMovOpCode (op1:Operand) (op2:Operand) =
+    // offset for movREG instruction (??? - is it also for mov reg imm?)
+    let offset = 0xb8
+    match op1,op2 with
+    | REG reg1, REG reg2 -> sprintf "INTERNAL ERROR: MOV %A, %A is not implemented yet." reg1 reg2 |> failwith
+    | REG reg1, IMM im2 ->
+        let movOpCode = offset + regToBits reg1 |> byte
+        let immVal = System.BitConverter.GetBytes im2
+        Array.append [|movOpCode|] immVal
+    | IMM im1, REG reg1 -> sprintf "ERROR: MOV %A, %A is not a valid instruction." im1 reg1 |> failwith
+    | IMM im1, IMM im2 -> sprintf "ERROR: MOV %A, %A is not a valid instruction." im1 im2 |> failwith
+
+
 let allRegisters:Set<Register> = set [RAX; RCX; RDX; RBX; RSI; RDI; RSP; RBP; R8; R9; R10; R11; R12; R13; R14; R15; ]
 let allArithRegisters:Set<Register> = allRegisters - (set [RBP;RSP])
 
@@ -33,6 +67,8 @@ let getEmptyRegister (usedRegisters:Register list) =
         |> List.head
     emptyReg,emptyReg::usedRegisters
 
+
+// Still in use - TODO REMOVE
 let registerToByteMov register =
     let offset = 0xb8
     match register with
@@ -48,19 +84,6 @@ let registerToByteMov register =
 
 
 
-let MOD = 0x3 <<< 6
-let regToBits : (Register -> int) = function
-    | RAX -> 0
-    | RCX -> 1
-    | RDX -> 2
-    | RBX -> 3
-    | RSP -> 4
-    | RBP -> 5
-    | RSI -> 6
-    | RDI -> 7
-    | reg -> failwith <| sprintf "Register %A doesn't fit in 3 bits - not implemented yet" reg
-
-let regToRM = regToBits >> (fun x -> x <<< 3)
 
 // --------------------------------
 // CODE GENERATION
@@ -79,16 +102,14 @@ let SYSCALL = [|0x0fuy; 0x05uy;|]
 
 // Write n bytes located at $rsp
 let SYS_WRITE n reg =
-    // rdi = 1 for STDOUT
-    let rdi = MOVRDI 1 // STDOUT
-    let rax = MOVRAX 1 // SYS_WRITE
-    let rdx = MOVRDX n
+    let rdi = genMovOpCode (REG RDI) (IMM 1) // STDOUT
+    let rax = genMovOpCode (REG RAX) (IMM 1) // SYS_WRITE
+    let rdx = genMovOpCode (REG RDX) (IMM n)
     Array.append rax SYSCALL
     |> Array.append rdx
     |> Array.append MOVRSIRSP
     |> Array.append rdi
     |> Array.append (PUSHREG reg)
-    // |> Array.append PUSHRAX
 
 
 // General expressions
@@ -96,12 +117,12 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
     match e with
         | Const i ->
             printfn "Generating mov for %A\tRegs in use: %A" e usedRegisters
-            // mov rax, imm
             let reg,usedRegisters' = getEmptyRegister usedRegisters
             // mov imm to r*x
             printfn "mov %A into %A\tRegs in use: %A" i reg usedRegisters'
-            let byteCodeReg = registerToByteMov reg
-            (Array.append [|byteCodeReg|] (System.BitConverter.GetBytes i)),usedRegisters'
+            let bytesForMov = genMovOpCode (REG reg) (IMM i)
+            bytesForMov,usedRegisters'
+
         | Add (e1,e2) ->
                     printfn "Generating ADD for %A\tRegs in use: %A" e usedRegisters
                     // ADD r/m16/32/64	r16/32/64 has opcode 1
@@ -188,11 +209,6 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             let eBytes,usedRegisters' =  genCodeForExpr usedRegisters e
             let sys_writeBytes = SYS_WRITE 8 <| List.head usedRegisters'
             Array.append eBytes (Array.append [|0x90uy;0x90uy;0x90uy;0x90uy;0x90uy;|] sys_writeBytes), usedRegisters'
-            // Now generate some code to print whatever is in the last used register
-            // It will need to be converted to a "string" eventually
-            // For now, just generate the bytes to write "HELLO FROM SLPC!\n" from stack
-            // main problem is that to print, I need pointers,
-            // and to have pointers, I need memory
 
         // For future use, when I update the AST and forget all about it
         | _ -> failwith "Uh Oh"
