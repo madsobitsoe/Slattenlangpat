@@ -290,18 +290,6 @@ let pBinOp =
     Parser inner
 
 
-
-// generate left-associative arithmetic expressions
-// let pArithExpr =
-//     chainl1 (pConst <|> pVar) pBinOp
-
-
-// Not used, but might be useful at some point
-//let pExprRightAssoc = chainr1 pConst pBinOp
-
-
-
-
 // Deal with F# stupid non-lazyness and freaky (sane) rules for mutually recursive definitions
 // In haskell this would just work, grr.
 // Define a parser, that dereferences a reference to another parser and uses that.
@@ -315,6 +303,8 @@ let pLetExpr =
     let idP = keyword (pString "let") >>. pIdent .>> (skipMany whitespace .>>. pEquals .>>. skipMany whitespace)
     let e1P = pExpr .>> separator
     let e2P = keyword (pString "in") >>. pExpr .>> many whitespace
+    // lift f to Parser<f> and apply it to the 3 subparsers of the let-expr.
+    // thus creating a Parser<Expr>
     returnP f <*> idP <*> e1P <*> e2P
 
 // Generate Print expressions
@@ -335,7 +325,6 @@ let pExprT1 =
 pExprRef := choice [chainl1 pExprT1 pBinOp; pExprT1]
 
 let parse (program:string) : Result<Expr,string> =
-
     match run pExpr program with
         | Ok (res:Expr,rem:string) -> Ok res
         | Error err -> Error err
