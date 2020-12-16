@@ -72,12 +72,13 @@ let MOVRAX (n:int) = Array.append [|registerToByteMov RAX|] <| System.BitConvert
 let MOVRDX (n:int) = Array.append [|registerToByteMov RDX|] <| System.BitConverter.GetBytes n
 let MOVRDI (n:int) = Array.append [|registerToByteMov RDI|] <| System.BitConverter.GetBytes n
 let MOVRSIRSP = [|0x48uy;0x89uy;0xe6uy|]
+let PUSHREG reg = [|regToBits reg + 0x50 |> byte|]
 let PUSHRAX = [|0x50uy|]
 // Bytes for a syscall instruction
 let SYSCALL = [|0x0fuy; 0x05uy;|]
 
 // Write n bytes located at $rsp
-let SYS_WRITE n =
+let SYS_WRITE n reg =
     // rdi = 1 for STDOUT
     let rdi = MOVRDI 1 // STDOUT
     let rax = MOVRAX 1 // SYS_WRITE
@@ -86,7 +87,8 @@ let SYS_WRITE n =
     |> Array.append rdx
     |> Array.append MOVRSIRSP
     |> Array.append rdi
-    |> Array.append PUSHRAX
+    |> Array.append (PUSHREG reg)
+    // |> Array.append PUSHRAX
 
 
 // General expressions
@@ -182,9 +184,9 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             printfn "Follow byte generated: %x" subFollowByte
             (Array.append firstBytes [|sub;subFollowByte|]), usedRegisters'
         | Print e ->
-            printfn "Generating code for printing rax."
+            printfn "Generating code for printing exp."
             let eBytes,usedRegisters' =  genCodeForExpr usedRegisters e
-            let sys_writeBytes = SYS_WRITE 8
+            let sys_writeBytes = SYS_WRITE 8 <| List.head usedRegisters'
             Array.append eBytes (Array.append [|0x90uy;0x90uy;0x90uy;0x90uy;0x90uy;|] sys_writeBytes), usedRegisters'
             // Now generate some code to print whatever is in the last used register
             // It will need to be converted to a "string" eventually
