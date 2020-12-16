@@ -58,7 +58,8 @@ This means we can finally write a "Hello world!"-program.
 ```
 Or an even cooler version, that currently takes minutes to evaluate in the interpreter (on my machine). I suspect the parser is a slow AF bottleneck.
 ```
-let H = (65 + 7) in let e = 101 in let l = 108 in let o = 111 in let nl = 10 in (print H) + (print e) + (print l) + (print l) + (print o) + (print nl)
+let H = (65 + 7) in let e = 101 in let l = 108 in let o = 111 in let nl = 10 in \
+(print H) + (print e) + (print l) + (print l) + (print o) + (print nl)
 ```
 
 ## Building
