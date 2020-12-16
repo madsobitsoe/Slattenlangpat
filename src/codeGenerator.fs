@@ -60,6 +60,27 @@ let genMovOpCode (op1:Operand) (op2:Operand) =
 let genPushOpCode = function
     | REG reg -> [|regToBits reg + 0x50 |> byte|]
     | IMM im -> sprintf "PUSH IMM is not implemented yet." |> failwith
+
+
+// NOTE
+// Do something like this, to generate functions with different no. of args
+// To use when generating Push/POP (unary) and MOV/ADD/SUB (binary)
+// type T = A | B
+// type T' =
+//     Un of (int -> int)
+//     | Bin of (int -> int -> int)
+
+// let top = function
+//     | A -> Un (fun a -> a + 1)
+//     | B -> Bin (fun a b -> a + b)
+
+// let (Un f) = top A in f 1
+// let (Bin f) = top B in f 1 2
+
+
+
+
+
 let allRegisters:Set<Register> = set [RAX; RCX; RDX; RBX; RSI; RDI; RSP; RBP; R8; R9; R10; R11; R12; R13; R14; R15; ]
 let allArithRegisters:Set<Register> = allRegisters - (set [RBP;RSP])
 
