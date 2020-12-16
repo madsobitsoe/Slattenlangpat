@@ -23,36 +23,69 @@ One of the goals is to create the tiniest possible executables - optimised for s
 It generates dependency-free binaries. No LibC here.
 
 ### Parser
-As of now, a valid expression (i.e. program) is of the form: 
-`[0-9]+([+-][0-9]+)+`
-Neither print nor whitespace is supported (yet). 
-Since the language can't really do anything right now, no biggie. 
+I will probably need to define the syntax soon. 
+Right now, the parser will parse an expression. 
+```
+VName = string literal
+Expr := 
+     | Const (int32)
+     | Add Expr Expr
+     | Sub Expr Expr
+     | Print Expr
+     | Let VName Expr Expr
+     | '(' Expr ')'
+```
 
 See the examples/ folder for .slp-program sources. 
 
+The parser is largely based on this [series](https://fsharpforfunandprofit.com/posts/understanding-parser-combinators/) and my very limited experience with Parsec in Haskell.
+It is incredibly slow.
+
+### Interpreter/REPL
+Start the REPL with `mono slpc.exe -i`. 
+Enter an expression, press RET and see the beautiful result!.
+`Print EXPR` will convert the result of evaluating EXPR to 8 bytes and print the lower 4 of them. `Print 97` will print 'a' and `Print 10` will print a newline.
+As nested let-bindings are allowed, the following works. (HAH!)
+```
+SLPi> let a = print 97 in let b = print 98 in let c = print 99 in print 10
+abc
+10
+```
+The above prints 10 last, because the REPL prints the result of evaluating the expression. `print 10` or `let x = 10 in print x` is thus "equivalent" to `let x = 10 in printf "%c" (char x); x` in F\#.
+
+#### Hello, World!
+This means we can finally write a "Hello world!"-program. 
+```
+(print 65 + 7) + (print 101) + (print 108) + (print 108) + (print 111) + (print 10)
+```
+Or an even cooler version, that currently takes minutes to evaluate in the interpreter (on my machine). I suspect the parser is a slow AF bottleneck.
+```
+let H = (65 + 7) in let e = 101 in let l = 108 in let o = 111 in let nl = 10 in \
+(print H) + (print e) + (print l) + (print l) + (print o) + (print nl)
+```
+(The let-binding version doesn't work in the compiler - yet).
 ## Building
 You will probably not want to.
 
 You will need:
-* An F\# compiler. Both mono and dotnet core will work.
-* make (optional)
+* An F\# compiler. I use mono. `dotnet core` will probably need an .fsproj file, but should be doable.
+* make 
 
 ## Usage
 Just don't.
 
 
-## State of project
+## State of compiler
 Very much in the beginning. Basically nothing is implemented.
 
 As of right now, the compiler will: 
 1. Read a filename and a destination from STDIN, 
-2. Parse the file and generate an AST. (From only Constants, + and -, all ops (lol, both ops) are left-associative, no parens yet) 
+2. Parse the file and generate an AST.  
 3. translate and generate the program incl. header as bytes
 4. Write the binary to disk at the designated path
 
 Generated programs can be run by setting the execute permission flag, and plain executing it. 
-I recommend running SLP-programs through gdb (with something like peda installed). Since the programs don't have output, they are much more interesting when you can step through them.
-
+I recommend running SLP-programs through gdb (with something like peda installed). Since the binaries don't have output (yet), they are much more interesting when you can step through them.
 
 
 Addition and subtraction of 32-bit numbers is supported.
