@@ -38,6 +38,9 @@ Expr :=
 
 See the examples/ folder for .slp-program sources. 
 
+The parser is largely based on this [series](https://fsharpforfunandprofit.com/posts/understanding-parser-combinators/) and my very limited experience with Parsec in Haskell.
+It is incredibly slow.
+
 ### Interpreter/REPL
 Start the REPL with `mono slpc.exe -i`. 
 Enter an expression, press RET and see the beautiful result!.
