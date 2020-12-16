@@ -55,7 +55,6 @@ The above prints 10 last, because the REPL prints the result of evaluating the e
 
 #### Hello, World!
 This means we can finally write a "Hello world!"-program. 
-(Which doesn't work in the compiler - yet).
 ```
 (print 65 + 7) + (print 101) + (print 108) + (print 108) + (print 111) + (print 10)
 ```
@@ -64,7 +63,7 @@ Or an even cooler version, that currently takes minutes to evaluate in the inter
 let H = (65 + 7) in let e = 101 in let l = 108 in let o = 111 in let nl = 10 in \
 (print H) + (print e) + (print l) + (print l) + (print o) + (print nl)
 ```
-
+(The let-binding version doesn't work in the compiler - yet).
 ## Building
 You will probably not want to.
 
