@@ -60,8 +60,12 @@ let repl' debug =
 
 
 let usage =
-      "Usage: \n\tslpc input.slp [-o executableName]\n"
-    + "\tInteractive mode: slpc -i [-d]\n"
+      "Usage: \n\tslpc.exe [flags] [input.slp] [-o outputExecutable]\n"
+    + "Flags:\n"
+    + "\t-h (--help) : Print this message. Same as no flags and input\n"
+    + "\t-i : Interactive mode (REPL)\n"
+    + "\t-d : Enable debug prints in REPL. Requires -i flag\n"
+    + "\t-p : Parse a file and print the result. -p must be used exclusively."
 
 
 [<EntryPoint>]
@@ -70,12 +74,22 @@ let main args =
         match args with
         | [|"-i"|] ->  repl' false
         | [|"-i";"-d"|] ->  repl' true
+        | [|"-p";inputfile|] ->
+            printfn "parsing %s" inputfile
+            inputfile |> (readFile >> Result.bind parse >> printfn "%A"); 0
+        | [|inputFilePath|] ->
+            let outputFilePath = inputFilePath.Split(".").[0]
+            printfn "Will compile %s and save as %s" inputFilePath outputFilePath
+            match readParseCompileAndWrite inputFilePath outputFilePath with
+                | Ok msg -> printfn "%s" msg; 0
+                | Error err -> printfn "%s" err; 1
         | [|inputFilePath;"-o";outputFilePath|] ->
 
             printfn "Will compile %s and save as %s" inputFilePath outputFilePath
             match readParseCompileAndWrite inputFilePath outputFilePath with
                 | Ok msg -> printfn "%s" msg; 0
                 | Error err -> printfn "%s" err; 1
+        | [|"-h"|] | [|"--help"|]
         | _ -> printfn "%s" usage; 0
 
     exitcode
