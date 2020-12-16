@@ -57,6 +57,9 @@ let genMovOpCode (op1:Operand) (op2:Operand) =
     | IMM im1, IMM im2 -> sprintf "ERROR: MOV %A, %A is not a valid instruction." im1 im2 |> failwith
 
 
+let genPushOpCode = function
+    | REG reg -> [|regToBits reg + 0x50 |> byte|]
+    | IMM im -> sprintf "PUSH IMM is not implemented yet." |> failwith
 let allRegisters:Set<Register> = set [RAX; RCX; RDX; RBX; RSI; RDI; RSP; RBP; R8; R9; R10; R11; R12; R13; R14; R15; ]
 let allArithRegisters:Set<Register> = allRegisters - (set [RBP;RSP])
 
@@ -95,8 +98,6 @@ let MOVRAX (n:int) = Array.append [|registerToByteMov RAX|] <| System.BitConvert
 let MOVRDX (n:int) = Array.append [|registerToByteMov RDX|] <| System.BitConverter.GetBytes n
 let MOVRDI (n:int) = Array.append [|registerToByteMov RDI|] <| System.BitConverter.GetBytes n
 let MOVRSIRSP = [|0x48uy;0x89uy;0xe6uy|]
-let PUSHREG reg = [|regToBits reg + 0x50 |> byte|]
-let PUSHRAX = [|0x50uy|]
 // Bytes for a syscall instruction
 let SYSCALL = [|0x0fuy; 0x05uy;|]
 
@@ -109,7 +110,7 @@ let SYS_WRITE n reg =
     |> Array.append rdx
     |> Array.append MOVRSIRSP
     |> Array.append rdi
-    |> Array.append (PUSHREG reg)
+    |> Array.append (genPushOpCode (REG reg))
 
 
 // General expressions
