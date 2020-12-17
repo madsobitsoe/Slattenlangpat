@@ -313,12 +313,13 @@ let pPrintExpr =
 
 
 let pExprT2 =
-    chainl1 (betweenParen pExpr) pBinOp
+    betweenParen pExpr
 let pExprT1 =
     pConst
     <|> pVar
     <|> pLetExpr
     <|> pPrintExpr
+    <|> chainl1 (pExprT2) pBinOp
     <|> pExprT2
 
 // Set up the actual top-level parser, so it can be used recursively by sub-parsers

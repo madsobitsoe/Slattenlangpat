@@ -67,6 +67,8 @@ let testcases'add'parens : TestCase<string,Result<Expr,string>> list =
 
         "(1+2)+3", Ok (Add (Add (Const 1, Const 2), Const 3));
         "(1 + 2) + 3", Ok (Add (Add (Const 1, Const 2), Const 3));
+        "(1 + 2) + 3 ", Ok (Add (Add (Const 1, Const 2), Const 3));
+        "((1 + 2) + 3)", Ok (Add (Add (Const 1, Const 2), Const 3));
         "1+(2+3)", Ok (Add (Const 1, (Add (Const 2, Const 3))));
         "1+(2+3+4)", Ok (Add (Const 1, (Add (Add (Const 2, Const 3), Const 4))));
         ] |> List.map returnT
@@ -101,15 +103,20 @@ let internalErrorNum = List.length internalErrors
 
 
 
-// Print failures and errors
+// Print test results
 let pf = function
-    | Failure (ATestCase (i,e),a) ->  printfn "Input: %A\tExpected: %A\tGot: %A" i e a
-    | InternalError (ATestCase (i,e),errmsg) ->  printfn "Input: %A\tExpected: %A\tGot: %A" i e errmsg
+    | Success (ATestCase (i,e)) -> printfn "[PASSED] Input: %A\nExpected: %A" i e
+    | Failure (ATestCase (i,e),a) ->  printfn "[FAILED] Input: %A\nExpected: %A\nGot: %A" i e a
+    | InternalError (ATestCase (i,e),errmsg) ->  printfn "[ERROR] Input: %A\nExpected: %A\nGot: %A" i e errmsg
 
 
 [<EntryPoint>]
 let main args =
+
     printfn "Tests Passed: %d\nTests Failed: %d\nInternal Errors: %d" passedNum failedNum internalErrorNum
+    match args with
+        [|"-v"|] -> printfn "Passed tests:" ; List.iter pf passed
+        | _ -> ()
     if failedNum <> 0 then
         printfn "Failed tests:"
         List.iter pf failed
