@@ -63,7 +63,6 @@ let genPushOpCode = function
 
 
 let genAddOpCode (op1:Operand) (op2:Operand)=
-
     match op1,op2 with
         | REG reg1, REG reg2 ->
             let offset = 0x1uy // add r/m16/32/64 r16/32/64
@@ -82,6 +81,27 @@ let genAddOpCode (op1:Operand) (op2:Operand)=
             // printfn "Follow byte generated: %x" addFollowByte
             let imBytes = System.BitConverter.GetBytes(im)
             Array.append [|offset|] imBytes
+        | _ -> sprintf "INTERNAL ERROR: ADD %A, %A is not implemented yet." op1 op2 |> failwith
+
+let genSubOpCode (op1:Operand) (op2:Operand)=
+    match op1,op2 with
+        | REG reg1, REG reg2 ->
+            let offset = 0x29uy // sub r/m16/32/64 r16/32/64
+            let subMOD = MOD
+            let subREG = regToBits reg1
+            let subRM = regToRM reg2
+            let subFollowByte = subMOD + subRM + subREG |> byte
+            printfn "Follow byte generated: %x" subFollowByte
+            [|offset;subFollowByte|]
+        // | REG reg, IMM im ->
+        //     let offset = 0x5uy // add rAX imm16/32
+        //     // let addMOD = MOD
+        //     // let addREG = regToBits reg1
+        //     // let addRM = regToRM reg2
+        //     // let addFollowByte = addMOD + addRM + addREG |> byte
+        //     // printfn "Follow byte generated: %x" addFollowByte
+        //     let imBytes = System.BitConverter.GetBytes(im)
+        //     Array.append [|offset|] imBytes
         | _ -> sprintf "INTERNAL ERROR: ADD %A, %A is not implemented yet." op1 op2 |> failwith
 
 
@@ -241,29 +261,6 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             (Array.append firstBytes addOpCodeWithRegs), usedRegisters'
             // (Array.append firstBytes [|add;addFollowByte|]), usedRegisters'
         | Sub (e1,e2) ->
-            // match (e1,e2) with
-                // | Const i1, Const i2 ->
-                //     printfn "Generating SUB for %A\tRegs in use: %A" e usedRegisters
-                //     // SUB r/m16/32/64	r16/32/64 has opcode 2b
-                //     // To generate a SUB, I need to know which registers to add
-                //     // So I can generate the following byte (that indicates registers)
-                //     let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
-                //     // Wow, nooot pretty. TODO REPLACE
-                //     let ex1Reg = List.head usedRegisters'
-                //     printfn "Reg for ex1: %A" ex1Reg
-                //     let ex2Bytes,usedRegisters'' = genCodeForExpr usedRegisters' e2
-                //     // Wow, nooot pretty. TODO REPLACE
-                //     let ex2Reg = List.head usedRegisters''
-                //     printfn "Reg for ex2: %A" ex2Reg
-                //     let firstBytes = Array.append ex1Bytes ex2Bytes
-                //     let sub = 0x29uy
-                //     let subMOD = MOD
-                //     let subREG = regToBits ex1Reg
-                //     let subRM = regToRM ex2Reg
-                //     let subFollowByte = subMOD + subRM + subREG |> byte
-                //     printfn "Follow byte generated: %x" subFollowByte
-                //     (Array.append firstBytes [|sub;subFollowByte|]), usedRegisters''
-                // | _ -> failwith "Uh Oh - SUB only works with const expressions for now."
             printfn "Generating SUB for %A\tRegs in use: %A" e usedRegisters
             let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
             // Wow, nooot pretty. TODO REPLACE
@@ -280,13 +277,15 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             printfn "Reg for ex2: %A" ex2Reg
             printfn "Regs used at ex2: %A" usedRegisters''
             let firstBytes = Array.append ex1Bytes ex2Bytes
-            let sub = 0x29uy
-            let subMOD = MOD
-            let subREG = regToBits ex1Reg
-            let subRM = regToRM ex2Reg
-            let subFollowByte = subMOD + subRM + subREG |> byte
-            printfn "Follow byte generated: %x" subFollowByte
-            (Array.append firstBytes [|sub;subFollowByte|]), usedRegisters'
+            // let sub = 0x29uy
+            // let subMOD = MOD
+            // let subREG = regToBits ex1Reg
+            // let subRM = regToRM ex2Reg
+            // let subFollowByte = subMOD + subRM + subREG |> byte
+            let subOpCodeWithRegs = genSubOpCode (REG ex1Reg) (REG ex2Reg)
+            // printfn "Follow byte generated: %x" subFollowByte
+            (Array.append firstBytes subOpCodeWithRegs), usedRegisters'
+            // (Array.append firstBytes [|sub;subFollowByte|]), usedRegisters'
         | Print e ->
             printfn "Generating code for printing exp."
             let eBytes,usedRegisters' =  genCodeForExpr usedRegisters e
