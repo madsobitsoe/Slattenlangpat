@@ -2,8 +2,10 @@ module AST
 
 
 type VName = string
+type Value = Int of int | String of string
+
 type Expr =
-    | Const of int
+    | Const of Value
     | Add of (Expr * Expr)
     | Sub of (Expr * Expr)
     | Var of VName

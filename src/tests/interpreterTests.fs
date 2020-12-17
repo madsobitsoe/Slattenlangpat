@@ -5,27 +5,27 @@ open TestUtil
 
 let testcases'const : TestCase<Expr,Result<EvalResult,string>> list =
     [
-        Const 0,  Ok 0;
-        Const 1,  Ok 1;
-        Const 2,  Ok 2;
-        Const 42,  Ok 42
+        Const (Int 0),  Ok 0;
+        Const (Int 1),  Ok 1;
+        Const (Int 2),  Ok 2;
+        Const (Int 42),  Ok 42
         ] |> List.map returnT
 
 
 let testcases'add : TestCase<Expr,Result<EvalResult,string>> list =
     [
-        Add (Const 0, Const 0),  Ok 0;
-        Add (Const 1, Const 0),  Ok 1;
-        Add (Const 0, Const 1),  Ok 1;
-        Add (Const 2, Const 0),  Ok 2;
-        Add (Const 0, Const 2),  Ok 2;
-        Add (Const 1, Const 1),  Ok 2;
-        Add (Const 1, Const 2),  Ok 3;
-        Add (Const 2, Const 1),  Ok 3;
-        Add (Const 1, Add (Const 1, Const 1)),  Ok 3;
-        Add (Add (Const 1, Const 1), Const 1),  Ok 3;
-        Add (Const 1, Add (Const 2, Const 3)),  Ok 6;
-        Add (Add (Const 1, Add (Const 2, Const 3)), Const 4),  Ok 10;
+        Add (Const (Int 0), Const (Int 0)),  Ok 0;
+        Add (Const (Int 1), Const (Int 0)),  Ok 1;
+        Add (Const (Int 0), Const (Int 1)),  Ok 1;
+        Add (Const (Int 2), Const (Int 0)),  Ok 2;
+        Add (Const (Int 0), Const (Int 2)),  Ok 2;
+        Add (Const (Int 1), Const (Int 1)),  Ok 2;
+        Add (Const (Int 1), Const (Int 2)),  Ok 3;
+        Add (Const (Int 2), Const (Int 1)),  Ok 3;
+        Add (Const (Int 1), Add (Const (Int 1), Const (Int 1))),  Ok 3;
+        Add (Add (Const (Int 1), Const (Int 1)), Const (Int 1)),  Ok 3;
+        Add (Const (Int 1), Add (Const (Int 2), Const (Int 3))),  Ok 6;
+        Add (Add (Const (Int 1), Add (Const (Int 2), Const (Int 3))), Const (Int 4)),  Ok 10;
 
         ] |> List.map returnT
 

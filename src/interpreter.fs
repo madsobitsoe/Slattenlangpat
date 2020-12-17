@@ -35,7 +35,9 @@ let lookup name env = env name
 
 
 let rec eval':(Expr * Environment -> Eval) = function
-    | ((Const i),env) -> Ok i
+    | Const (Int i),env -> Ok i
+//    | Value (String s),env -> sprintf "Strings not implemented yet" |> failwith
+//    | ((Const i),env) -> Ok i
     | Add (e1,e2), env ->
         let res1 = eval' (e1,env)
         match res1 with
@@ -83,7 +85,7 @@ let rec eval':(Expr * Environment -> Eval) = function
             | Error err -> Error err
             | good ->
                 good >>= (fun x ->
-                          let newEnv = extendEnv name (Const x) env
+                          let newEnv = extendEnv name (Const (Int x)) env
                           eval' (inExpr,newEnv)
              )
     | unimplemented -> sprintf "The expression '%A' is sadly not implemented yet. \nCheck https://github.com/madsobitsoe/Slattenlangpat/issues and maybe add an issue or submit a pull request." (fst unimplemented) |> Error

@@ -277,7 +277,7 @@ let pIdent =
     Parser inner
 
 
-let pConst = many1 pDigit .>> skipMany whitespace |>>  (csToS >> int >> Const)
+let pConst = many1 pDigit .>> skipMany whitespace |>>  (csToS >> int >> fun x -> Const (Int x))
 let pVar = pIdent .>> skipMany whitespace |>> Var
 let pBinOp =
     let inner input =

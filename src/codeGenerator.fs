@@ -137,7 +137,7 @@ let SYS_WRITE n reg =
 // General expressions
 let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Register list) =
     match e with
-        | Const i ->
+        | Const (Int i) ->
             printfn "Generating mov for %A\tRegs in use: %A" e usedRegisters
             let reg,usedRegisters' = getEmptyRegister usedRegisters
             // mov imm to r*x
