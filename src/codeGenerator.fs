@@ -62,6 +62,29 @@ let genPushOpCode = function
     | IMM im -> sprintf "PUSH IMM is not implemented yet." |> failwith
 
 
+let genAddOpCode (op1:Operand) (op2:Operand)=
+
+    match op1,op2 with
+        | REG reg1, REG reg2 ->
+            let offset = 0x1uy // add r/m16/32/64 r16/32/64
+            let addMOD = MOD
+            let addREG = regToBits reg1
+            let addRM = regToRM reg2
+            let addFollowByte = addMOD + addRM + addREG |> byte
+            printfn "Follow byte generated: %x" addFollowByte
+            [|offset;addFollowByte|]
+        | REG reg, IMM im ->
+            let offset = 0x5uy // add rAX imm16/32
+            // let addMOD = MOD
+            // let addREG = regToBits reg1
+            // let addRM = regToRM reg2
+            // let addFollowByte = addMOD + addRM + addREG |> byte
+            // printfn "Follow byte generated: %x" addFollowByte
+            let imBytes = System.BitConverter.GetBytes(im)
+            Array.append [|offset|] imBytes
+        | _ -> sprintf "INTERNAL ERROR: ADD %A, %A is not implemented yet." op1 op2 |> failwith
+
+
 // NOTE
 // Do something like this, to generate functions with different no. of args
 // To use when generating Push/POP (unary) and MOV/ADD/SUB (binary)
@@ -144,41 +167,79 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             printfn "mov %A into %A\tRegs in use: %A" i reg usedRegisters'
             let bytesForMov = genMovOpCode (REG reg) (IMM i)
             bytesForMov,usedRegisters'
+        | Add (e1, Const (Int imm)) ->
+            printfn "Generating ADD rAX IMM for %A\tRegs in use: %A" e usedRegisters
+            // ADD r/m16/32/64	r16/32/64 has opcode 1
+            // To generate an add, I need to know which registers to add
+            // So I can generate the following byte (that indicates registers)
+            // https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM
+            // [ MOD 2 | REG 3 | RM 3 ]
+            // MOD= 11 for direct reg addressing 64 bit mode
+            // REG =  001 for RCX
+            // RM == 001 for RAX
+            // 0x01 0xc1 -> add rcx, rax
+            // 0x01 (0xc1 - 0x01 + 0x05) -> add ebp, eax
+            let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
+            // Wow, nooot pretty. TODO REPLACE
+            // ex1Reg *should* contain result of computing e1.
+            // Assume I can do what I want with all other regs used exclusively in computation of e1
+            let ex1Reg = List.head usedRegisters'
+            printfn "ex1: %A" e1
+            printfn "Reg for ex1: %A" ex1Reg
+            printfn "Regs used by ex1: %A" usedRegisters'
+            // let ex2Bytes,usedRegisters'' = genCodeForExpr usedRegisters' e2
+            // // Wow, nooot pretty. TODO REPLACE
+            // let ex2Reg = List.head usedRegisters''
+            // printfn "ex2: %A" e2
+            // printfn "Reg for ex2: %A" ex2Reg
+            // printfn "Regs used at ex2: %A" usedRegisters''
 
+
+            // let add = 0x1uy
+            // let addMOD = MOD
+            // let addREG = regToBits ex1Reg
+            // let addRM = regToRM ex2Reg
+            // let addFollowByte = addMOD + addRM + addREG |> byte
+            // printfn "Follow byte generated: %x" addFollowByte
+            let addOpCodeWithRegs = genAddOpCode (REG ex1Reg) (IMM imm)
+            (Array.append ex1Bytes addOpCodeWithRegs), usedRegisters'
+            // (Array.append firstBytes [|add;addFollowByte|]), usedRegisters'
         | Add (e1,e2) ->
-                    printfn "Generating ADD for %A\tRegs in use: %A" e usedRegisters
-                    // ADD r/m16/32/64	r16/32/64 has opcode 1
-                    // To generate an add, I need to know which registers to add
-                    // So I can generate the following byte (that indicates registers)
-                    // https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM
-                    // [ MOD 2 | REG 3 | RM 3 ]
-                    // MOD= 11 for direct reg addressing 64 bit mode
-                    // REG =  001 for RCX
-                    // RM == 001 for RAX
-                    // 0x01 0xc1 -> add rcx, rax
-                    // 0x01 (0xc1 - 0x01 + 0x05) -> add ebp, eax
-                    let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
-                    // Wow, nooot pretty. TODO REPLACE
-                    // ex1Reg *should* contain result of computing e1.
-                    // Assume I can do what I want with all other regs used exclusively in computation of e1
-                    let ex1Reg = List.head usedRegisters'
-                    printfn "ex1: %A" e1
-                    printfn "Reg for ex1: %A" ex1Reg
-                    printfn "Regs used by ex1: %A" usedRegisters'
-                    let ex2Bytes,usedRegisters'' = genCodeForExpr usedRegisters' e2
-                    // Wow, nooot pretty. TODO REPLACE
-                    let ex2Reg = List.head usedRegisters''
-                    printfn "ex2: %A" e2
-                    printfn "Reg for ex2: %A" ex2Reg
-                    printfn "Regs used at ex2: %A" usedRegisters''
-                    let firstBytes = Array.append ex1Bytes ex2Bytes
-                    let add = 0x1uy
-                    let addMOD = MOD
-                    let addREG = regToBits ex1Reg
-                    let addRM = regToRM ex2Reg
-                    let addFollowByte = addMOD + addRM + addREG |> byte
-                    printfn "Follow byte generated: %x" addFollowByte
-                    (Array.append firstBytes [|add;addFollowByte|]), usedRegisters'
+            printfn "Generating ADD for %A\tRegs in use: %A" e usedRegisters
+            // ADD r/m16/32/64	r16/32/64 has opcode 1
+            // To generate an add, I need to know which registers to add
+            // So I can generate the following byte (that indicates registers)
+            // https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM
+            // [ MOD 2 | REG 3 | RM 3 ]
+            // MOD= 11 for direct reg addressing 64 bit mode
+            // REG =  001 for RCX
+            // RM == 001 for RAX
+            // 0x01 0xc1 -> add rcx, rax
+            // 0x01 (0xc1 - 0x01 + 0x05) -> add ebp, eax
+            let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
+            // Wow, nooot pretty. TODO REPLACE
+            // ex1Reg *should* contain result of computing e1.
+            // Assume I can do what I want with all other regs used exclusively in computation of e1
+            let ex1Reg = List.head usedRegisters'
+            printfn "ex1: %A" e1
+            printfn "Reg for ex1: %A" ex1Reg
+            printfn "Regs used by ex1: %A" usedRegisters'
+            let ex2Bytes,usedRegisters'' = genCodeForExpr usedRegisters' e2
+            // Wow, nooot pretty. TODO REPLACE
+            let ex2Reg = List.head usedRegisters''
+            printfn "ex2: %A" e2
+            printfn "Reg for ex2: %A" ex2Reg
+            printfn "Regs used at ex2: %A" usedRegisters''
+            let firstBytes = Array.append ex1Bytes ex2Bytes
+            // let add = 0x1uy
+            // let addMOD = MOD
+            // let addREG = regToBits ex1Reg
+            // let addRM = regToRM ex2Reg
+            // let addFollowByte = addMOD + addRM + addREG |> byte
+            // printfn "Follow byte generated: %x" addFollowByte
+            let addOpCodeWithRegs = genAddOpCode (REG ex1Reg) (REG ex2Reg)
+            (Array.append firstBytes addOpCodeWithRegs), usedRegisters'
+            // (Array.append firstBytes [|add;addFollowByte|]), usedRegisters'
         | Sub (e1,e2) ->
             // match (e1,e2) with
                 // | Const i1, Const i2 ->
