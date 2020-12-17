@@ -5,9 +5,11 @@ slpc.exe: src/ast.fs src/parser.fs src/interpreter.fs src/codeGenerator.fs src/m
 	fsharpc src/ast.fs src/parser.fs src/interpreter.fs src/codeGenerator.fs src/main.fs -o slpc.exe
 
 
-
-test: src/tests/parserTests.fs
+parserTests.exe: src/tests/parserTests.fs
 	fsharpc src/ast.fs src/parser.fs src/tests/parserTests.fs
+
+.PHONY: test
+test: parserTests.exe
 	mono parserTests.exe
 
 
