@@ -327,5 +327,7 @@ pExprRef := choice [chainl1 pExprT1 pBinOp; pExprT1]
 
 let parse (program:string) : Result<Expr,string> =
     match run pExpr program with
-        | Ok (res:Expr,rem:string) -> Ok res
+        | Ok (res:Expr,rem:string) ->
+            if not (String.IsNullOrEmpty(rem)) then sprintf "Did not consume all input. Left: %s" rem |> Error
+            else Ok res
         | Error err -> Error err

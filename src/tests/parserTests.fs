@@ -78,6 +78,9 @@ let testcases'invalid'parses : TestCase<string,Result<Expr,string>> list =
 
         "(1", Error "";
         "1)", Error "";
+        "+1", Error "";
+        "1+", Error "";
+        "1 1", Error "";
         "((((", Error "";
         "let 1 = 1 in 1", Error "";
         ] |> List.map returnT
