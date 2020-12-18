@@ -1,0 +1,10 @@
+let x1 = 1 in
+let x2 = 2 in
+let x3 = 3 in
+let x4 = 4 in
+let x5 = 5 in
+let x6 = 6 in
+let x7 = 7 in
+let x8 = 8 in
+let x9 = 9 in
+x9
