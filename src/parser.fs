@@ -180,12 +180,15 @@ let sepBy1 p sep =
 
 let sepBy p sep = sepBy1 p sep <|> returnP []
 
+// How fParsec does it
+// let chainl1 p op =
+//     Inline.SepBy((fun x0 -> x0), (fun x f y -> f x y), (fun x -> x), p, op)
 
-
+// let chainl p op x = chainl1 p op <|>% x
 
 // The parser chainl1 p op parses one or more occurrences of p separated by op
 // left-associative
-// Most probably not the optimal way to implement this
+// Definitely not the optimal way to implement this. This is slow AF
 let chainl1 p op =
     let inner input =
         let parseSingle = run p input
@@ -222,28 +225,17 @@ let chainr1 p op =
     Parser inner
 
 
-
-
-
-
-
 // --------------------------------
-// SLP-parsers, types and definitions
+// SLP-parsers
 // --------------------------------
 
 let whitespace = satisfy (fun x -> List.contains x [' ';'\n';'\t'])
-
 let separator = skipMany whitespace
-
-
 let pString : string -> Parser<string * string> =
     List.ofSeq >> List.map pChar >> sequence >> mapP csToS
 
-
-
 // A keyword should be followed by whitespace
 let keywords = ["print";"let";"in"]
-
 // Use with another parser, like `keyword (pString "print")
 let keyword p =
     p .>> separator
@@ -319,11 +311,10 @@ let pExprT1 =
     <|> pVar
     <|> pLetExpr
     <|> pPrintExpr
-    <|> chainl1 (pExprT2) pBinOp
     <|> pExprT2
 
 // Set up the actual top-level parser, so it can be used recursively by sub-parsers
-pExprRef := choice [chainl1 pExprT1 pBinOp; pExprT1]
+pExprRef := chainl1 pExprT1 pBinOp
 
 let parse (program:string) : Result<Expr,string> =
     match run pExpr program with
