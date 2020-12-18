@@ -56,7 +56,9 @@ let genMovOpCode (op1:Operand) (op2:Operand) =
     | IMM im1, REG reg1 -> sprintf "ERROR: MOV %A, %A is not a valid instruction." im1 reg1 |> failwith
     | IMM im1, IMM im2 -> sprintf "ERROR: MOV %A, %A is not a valid instruction." im1 im2 |> failwith
 
-
+// USEFUL FOR Impl. PUSH/POP for 64 bit vals
+// 50+r	  - PUSH    -  r64/16    -    Push Word, Doubleword or Quadword Onto the Stack
+// 58+r   - POP     -  r64/16    -    Pop a Value from the Stack
 let genPushOpCode = function
     | REG reg -> [|regToBits reg + 0x50 |> byte|]
     | IMM im -> sprintf "PUSH IMM is not implemented yet." |> failwith
@@ -72,13 +74,8 @@ let genAddOpCode (op1:Operand) (op2:Operand)=
             let addFollowByte = addMOD + addRM + addREG |> byte
             printfn "Follow byte generated: %x" addFollowByte
             [|offset;addFollowByte|]
-        | REG reg, IMM im ->
+        | REG RAX, IMM im ->
             let offset = 0x5uy // add rAX imm16/32
-            // let addMOD = MOD
-            // let addREG = regToBits reg1
-            // let addRM = regToRM reg2
-            // let addFollowByte = addMOD + addRM + addREG |> byte
-            // printfn "Follow byte generated: %x" addFollowByte
             let imBytes = System.BitConverter.GetBytes(im)
             Array.append [|offset|] imBytes
         | _ -> sprintf "INTERNAL ERROR: ADD %A, %A is not implemented yet." op1 op2 |> failwith
@@ -93,15 +90,6 @@ let genSubOpCode (op1:Operand) (op2:Operand)=
             let subFollowByte = subMOD + subRM + subREG |> byte
             printfn "Follow byte generated: %x" subFollowByte
             [|offset;subFollowByte|]
-        // | REG reg, IMM im ->
-        //     let offset = 0x5uy // add rAX imm16/32
-        //     // let addMOD = MOD
-        //     // let addREG = regToBits reg1
-        //     // let addRM = regToRM reg2
-        //     // let addFollowByte = addMOD + addRM + addREG |> byte
-        //     // printfn "Follow byte generated: %x" addFollowByte
-        //     let imBytes = System.BitConverter.GetBytes(im)
-        //     Array.append [|offset|] imBytes
         | _ -> sprintf "INTERNAL ERROR: ADD %A, %A is not implemented yet." op1 op2 |> failwith
 
 
@@ -122,8 +110,6 @@ let genSubOpCode (op1:Operand) (op2:Operand)=
 
 
 
-
-
 let allRegisters:Set<Register> = set [RAX; RCX; RDX; RBX; RSI; RDI; RSP; RBP; R8; R9; R10; R11; R12; R13; R14; R15; ]
 let allArithRegisters:Set<Register> = allRegisters - (set [RBP;RSP])
 
@@ -135,33 +121,16 @@ let getEmptyRegister (usedRegisters:Register list) =
     emptyReg,emptyReg::usedRegisters
 
 
-// Still in use - TODO REMOVE
-let registerToByteMov register =
-    let offset = 0xb8
-    match register with
-        | RAX -> 0 + offset |> byte
-        | RCX -> 1 + offset |> byte
-        | RDX -> 2 + offset |> byte
-        | RBX -> 3 + offset |> byte
-        | RSI -> 6 + offset |> byte
-        | RDI -> 7 + offset |> byte
-        // | RSP -> 5 + offset |> byte
-        // | RBP -> 6 + offset |> byte
-        | _ -> failwith <| sprintf "MOV FOR %A NOT YET IMPLEMENTED." register
-
-
-
-
 // --------------------------------
 // CODE GENERATION
 // --------------------------------
 
 // hacky way to print rax
 // Move n into rax
-let MOVRAX (n:int) = Array.append [|registerToByteMov RAX|] <| System.BitConverter.GetBytes n
-let MOVRDX (n:int) = Array.append [|registerToByteMov RDX|] <| System.BitConverter.GetBytes n
-let MOVRDI (n:int) = Array.append [|registerToByteMov RDI|] <| System.BitConverter.GetBytes n
+    // the 0x48uy is needed to make the mov 64-bit - we are moving an address.
+
 let MOVRSIRSP = [|0x48uy;0x89uy;0xe6uy|]
+
 // Bytes for a syscall instruction
 let SYSCALL = [|0x0fuy; 0x05uy;|]
 
@@ -207,23 +176,8 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             printfn "ex1: %A" e1
             printfn "Reg for ex1: %A" ex1Reg
             printfn "Regs used by ex1: %A" usedRegisters'
-            // let ex2Bytes,usedRegisters'' = genCodeForExpr usedRegisters' e2
-            // // Wow, nooot pretty. TODO REPLACE
-            // let ex2Reg = List.head usedRegisters''
-            // printfn "ex2: %A" e2
-            // printfn "Reg for ex2: %A" ex2Reg
-            // printfn "Regs used at ex2: %A" usedRegisters''
-
-
-            // let add = 0x1uy
-            // let addMOD = MOD
-            // let addREG = regToBits ex1Reg
-            // let addRM = regToRM ex2Reg
-            // let addFollowByte = addMOD + addRM + addREG |> byte
-            // printfn "Follow byte generated: %x" addFollowByte
             let addOpCodeWithRegs = genAddOpCode (REG ex1Reg) (IMM imm)
             (Array.append ex1Bytes addOpCodeWithRegs), usedRegisters'
-            // (Array.append firstBytes [|add;addFollowByte|]), usedRegisters'
         | Add (e1,e2) ->
             printfn "Generating ADD for %A\tRegs in use: %A" e usedRegisters
             // ADD r/m16/32/64	r16/32/64 has opcode 1
@@ -237,7 +191,6 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             // 0x01 0xc1 -> add rcx, rax
             // 0x01 (0xc1 - 0x01 + 0x05) -> add ebp, eax
             let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
-            // Wow, nooot pretty. TODO REPLACE
             // ex1Reg *should* contain result of computing e1.
             // Assume I can do what I want with all other regs used exclusively in computation of e1
             let ex1Reg = List.head usedRegisters'
@@ -251,19 +204,12 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             printfn "Reg for ex2: %A" ex2Reg
             printfn "Regs used at ex2: %A" usedRegisters''
             let firstBytes = Array.append ex1Bytes ex2Bytes
-            // let add = 0x1uy
-            // let addMOD = MOD
-            // let addREG = regToBits ex1Reg
-            // let addRM = regToRM ex2Reg
-            // let addFollowByte = addMOD + addRM + addREG |> byte
-            // printfn "Follow byte generated: %x" addFollowByte
             let addOpCodeWithRegs = genAddOpCode (REG ex1Reg) (REG ex2Reg)
             (Array.append firstBytes addOpCodeWithRegs), usedRegisters'
-            // (Array.append firstBytes [|add;addFollowByte|]), usedRegisters'
+
         | Sub (e1,e2) ->
             printfn "Generating SUB for %A\tRegs in use: %A" e usedRegisters
             let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
-            // Wow, nooot pretty. TODO REPLACE
             // ex1Reg *should* contain result of computing e1.
             // Assume I can do what I want with all other regs used exclusively in computation of e1
             let ex1Reg = List.head usedRegisters'
@@ -277,21 +223,18 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             printfn "Reg for ex2: %A" ex2Reg
             printfn "Regs used at ex2: %A" usedRegisters''
             let firstBytes = Array.append ex1Bytes ex2Bytes
-            // let sub = 0x29uy
-            // let subMOD = MOD
-            // let subREG = regToBits ex1Reg
-            // let subRM = regToRM ex2Reg
-            // let subFollowByte = subMOD + subRM + subREG |> byte
             let subOpCodeWithRegs = genSubOpCode (REG ex1Reg) (REG ex2Reg)
             // printfn "Follow byte generated: %x" subFollowByte
             (Array.append firstBytes subOpCodeWithRegs), usedRegisters'
-            // (Array.append firstBytes [|sub;subFollowByte|]), usedRegisters'
         | Print e ->
             printfn "Generating code for printing exp."
             let eBytes,usedRegisters' =  genCodeForExpr usedRegisters e
             let sys_writeBytes = SYS_WRITE 8 <| List.head usedRegisters'
             Array.append eBytes (Array.append [|0x90uy;0x90uy;0x90uy;0x90uy;0x90uy;|] sys_writeBytes), usedRegisters'
 
+        | Var (name) -> failwith "Var expression not implemented in the compiler - yet."
+        | Let (name,e,ine) ->
+            failwith "Let bindings not implemented in the compiler - yet."
         // For future use, when I update the AST and forget all about it
         | _ -> failwith "Uh Oh"
 
