@@ -25,10 +25,10 @@ testv: parserTests.exe interpreterTests.exe
 
 
 .PHONY: examples
-examples: slpc.exe examples/add1.slp examples/add_and_sub.slp
+examples: slpc.exe examples/add1.slp examples/add_and_sub.slp examples/hello.slp
 	mono slpc.exe examples/add1.slp -o examples/add1
 	mono slpc.exe examples/add_and_sub.slp -o examples/add_and_sub
-
+	mono slpc.exe examples/hello.slp -o examples/hello
 
 .PHONY: clean
 clean:
