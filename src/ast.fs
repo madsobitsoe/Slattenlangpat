@@ -1,15 +1,21 @@
 module AST
 
 
-type VName = string
 type Value = Int of int | String of string
+type VName = string
+type FName = string
+type Op = Plus | Minus
 
 type Expr =
     | Const of Value
-    | Add of (Expr * Expr)
-    | Sub of (Expr * Expr)
     | Var of VName
+    | Oper of Op * Expr * Expr
     | Let of VName * Expr * Expr
+    | Call of VName * Expr list
     | Print of Expr
 
-type Program = Expr list
+type Statement =
+    | SDef of VName * Expr
+    | SExp of Expr
+
+type Program = Statement list
