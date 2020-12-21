@@ -2,7 +2,7 @@ open System.IO
 
 open AST
 open Parser
-//open CodeGenerator
+open CodeGenerator
 open Interpreter
 
 
@@ -15,6 +15,15 @@ let readFile filename =
 //     readFile inputFilename
 //     |> Result.bind parse
 //     |> Result.bind (compileAndWrite outputFilename)
+
+let readParseCompileAndWrite inputFilename outputFilename =
+    let prog =
+        readFile inputFilename
+        |> Result.bind parse
+    match prog with
+        | Ok (SExp e :: es) -> compileAndWrite outputFilename e
+        | _ -> failwith "Sorry, you tried to compile stuff not implemented yet"
+    // |> Result.bind (compileAndWrite outputFilename)
 
 
 let rec repl handler =
@@ -75,18 +84,18 @@ let main args =
         | [|"-p";inputfile|] ->
             printfn "parsing %s" inputfile
             inputfile |> (readFile >> Result.bind parse >> printfn "%A"); 0
-        // | [|inputFilePath|] ->
-        //     let outputFilePath = inputFilePath.Split(".").[0]
-        //     printfn "Will compile %s and save as %s" inputFilePath outputFilePath
-        //     match readParseCompileAndWrite inputFilePath outputFilePath with
-        //         | Ok msg -> printfn "%s" msg; 0
-        //         | Error err -> printfn "%s" err; 1
-        // | [|inputFilePath;"-o";outputFilePath|] ->
+        | [|inputFilePath|] ->
+            let outputFilePath = inputFilePath.Split(".").[0]
+            printfn "Will compile %s and save as %s" inputFilePath outputFilePath
+            match readParseCompileAndWrite inputFilePath outputFilePath with
+                | Ok msg -> printfn "%s" msg; 0
+                | Error err -> printfn "%s" err; 1
+        | [|inputFilePath;"-o";outputFilePath|] ->
 
-        //     printfn "Will compile %s and save as %s" inputFilePath outputFilePath
-        //     match readParseCompileAndWrite inputFilePath outputFilePath with
-        //         | Ok msg -> printfn "%s" msg; 0
-        //         | Error err -> printfn "%s" err; 1
+            printfn "Will compile %s and save as %s" inputFilePath outputFilePath
+            match readParseCompileAndWrite inputFilePath outputFilePath with
+                | Ok msg -> printfn "%s" msg; 0
+                | Error err -> printfn "%s" err; 1
         | [|"-h"|] | [|"--help"|]
         | _ -> printfn "%s" usage; 0
 

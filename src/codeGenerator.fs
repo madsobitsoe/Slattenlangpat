@@ -156,7 +156,7 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             printfn "mov %A into %A\tRegs in use: %A" i reg usedRegisters'
             let bytesForMov = genMovOpCode (REG reg) (IMM i)
             bytesForMov,usedRegisters'
-        | Add (e1, Const (Int imm)) ->
+        | Oper (Plus, e1, Const (Int imm)) ->
             printfn "Generating ADD rAX IMM for %A\tRegs in use: %A" e usedRegisters
             // ADD r/m16/32/64	r16/32/64 has opcode 1
             // To generate an add, I need to know which registers to add
@@ -178,7 +178,7 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             printfn "Regs used by ex1: %A" usedRegisters'
             let addOpCodeWithRegs = genAddOpCode (REG ex1Reg) (IMM imm)
             (Array.append ex1Bytes addOpCodeWithRegs), usedRegisters'
-        | Add (e1,e2) ->
+        | Oper (Plus,e1,e2) ->
             printfn "Generating ADD for %A\tRegs in use: %A" e usedRegisters
             // ADD r/m16/32/64	r16/32/64 has opcode 1
             // To generate an add, I need to know which registers to add
@@ -207,7 +207,7 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             let addOpCodeWithRegs = genAddOpCode (REG ex1Reg) (REG ex2Reg)
             (Array.append firstBytes addOpCodeWithRegs), usedRegisters'
 
-        | Sub (e1,e2) ->
+        | Oper (Minus, e1, e2) ->
             printfn "Generating SUB for %A\tRegs in use: %A" e usedRegisters
             let ex1Bytes,usedRegisters' = genCodeForExpr usedRegisters e1
             // ex1Reg *should* contain result of computing e1.
@@ -226,15 +226,13 @@ let rec genCodeForExpr (usedRegisters:Register list) (e:Expr) : (byte [] * Regis
             let subOpCodeWithRegs = genSubOpCode (REG ex1Reg) (REG ex2Reg)
             // printfn "Follow byte generated: %x" subFollowByte
             (Array.append firstBytes subOpCodeWithRegs), usedRegisters'
-        | Print e ->
-            printfn "Generating code for printing exp."
-            let eBytes,usedRegisters' =  genCodeForExpr usedRegisters e
-            let sys_writeBytes = SYS_WRITE 8 <| List.head usedRegisters'
-            Array.append eBytes (Array.append [|0x90uy;0x90uy;0x90uy;0x90uy;0x90uy;|] sys_writeBytes), usedRegisters'
+        // | Print e ->
+        //     printfn "Generating code for printing exp."
+        //     let eBytes,usedRegisters' =  genCodeForExpr usedRegisters e
+        //     let sys_writeBytes = SYS_WRITE 8 <| List.head usedRegisters'
+        //     Array.append eBytes (Array.append [|0x90uy;0x90uy;0x90uy;0x90uy;0x90uy;|] sys_writeBytes), usedRegisters'
 
         | Var (name) -> failwith "Var expression not implemented in the compiler - yet."
-        | Let (name,e,ine) ->
-            failwith "Let bindings not implemented in the compiler - yet."
         // For future use, when I update the AST and forget all about it
         | _ -> failwith "Uh Oh"
 
