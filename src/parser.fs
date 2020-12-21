@@ -171,25 +171,7 @@ let createParserForwardedToRef<'T>() =
     let wrapper = {parseFun=inner;label="unknown"}
     (wrapper, parserRef)
 
-let satisfy predicate label =
-    let inner input =
-        let remInput,charOpt = nextChar input
-        let pos = parserPositionFromInputState input
-        match charOpt with
-            | None ->
-                let err = "No more input"
-                Error (label,err,pos)
-            | Some first ->
-                if predicate first then
-                    Ok (first,remInput)
-                else
-                    let err = sprintf "Unexpected '%c'" first
-                    Error (label,err,pos)
-    {parseFun=inner; label=label }
 
-let pChar c =
-    (=) c
-    |> satisfy <| sprintf "%c" c
 
 
 let mapP f p =
@@ -240,12 +222,10 @@ let choice parsers =
         | [] -> failwith "No parsers for choice. List was empty"
         | _ -> List.reduce ( <|> ) parsers
 
-let anyOf chars =
-    let label = sprintf "any of %A" chars
-    chars
-    |> List.map pChar
-    |> choice
-    <?> label
+
+
+
+
 
 
 
@@ -372,6 +352,37 @@ let chainr1 p op =
 // --------------------------------
 // SLP-parsers
 // --------------------------------
+
+
+let satisfy predicate label =
+    let inner input =
+        let remInput,charOpt = nextChar input
+        let pos = parserPositionFromInputState input
+        match charOpt with
+            | None ->
+                let err = "No more input"
+                Error (label,err,pos)
+            | Some first ->
+                if predicate first then
+                    Ok (first,remInput)
+                else
+                    let err = sprintf "Unexpected '%c'" first
+                    Error (label,err,pos)
+    {parseFun=inner; label=label }
+
+let pChar c =
+    (=) c
+    |> satisfy <| sprintf "%c" c
+
+
+let anyOf chars =
+    let label = sprintf "any of %A" chars
+    chars
+    |> List.map pChar
+    |> choice
+    <?> label
+
+
 
 let whitespace = satisfy (fun x -> List.contains x [' ';'\n';'\t']) "space, newline or tab"
 let separator = skipMany whitespace <?> "separator"
