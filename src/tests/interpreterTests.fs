@@ -30,9 +30,22 @@ let testcases'add : TestCase<Expr,Result<EvalResult,string>> list =
         ] |> List.map returnT
 
 
+
+let testcases'sub : TestCase<Expr,Result<EvalResult,string>> list =
+    [
+        Sub (Const (Int 0), Const (Int 0)),  Ok 0;
+        Sub (Const (Int 1), Const (Int 0)),  Ok 1;
+        Sub (Const (Int 1), Const (Int 1)),  Ok 0;
+        Sub (Const (Int 0), Const (Int 1)),  Ok (-1);
+        Sub (Sub(Const (Int 5), Const (Int 4)), Const (Int 1)),  Ok 0;
+    ] |> List.map returnT
+
+
+
 let allTests = ATestSuite <| (test eval,
                               testcases'const
-                              @ testcases'add)
+                              @ testcases'add
+                              @ testcases'sub)
                                  // @ testcases'add'parens
                                  // @ testcases'invalid'parses)
 
