@@ -389,20 +389,6 @@ let separator = skipMany whitespace <?> "separator"
 let pString : string -> Parser<string * InputState> =
     List.ofSeq >> List.map pChar >> sequence >> mapP csToS
 
-// A keyword should be followed by whitespace
-let keywords = ["print";"let";"in"]
-// Use with another parser, like `keyword (pString "print")
-let keyword p =
-    p .>> separator
-
-let pDigit = satisfy Char.IsDigit "digit" //anyOf ['0'..'9']
-
-// compare char to ascii-range 'A'..'Z' @ 'a'..'z'
-let isLetter : char -> bool = (int >> fun x ->
-                               (0x41 <= x && x <= 0x5a) ||
-                               (0x61 <= x && x <= 0x7a))
-let pLetter = satisfy isLetter "letter"
-let pLetterOrDigit = (pLetter <|> pDigit) <?> "letter or digit"
 // Parses an operator, eats ws on both sides
 let pOp op = (many whitespace >>. pChar op .>> many whitespace) <?> string op
 let pPlus = pOp '+'
@@ -412,6 +398,42 @@ let pLParen = pOp '('
 let pRParen = pOp ')'
 
 let betweenParen p = (between pLParen p pRParen) |?> sprintf "( %A )" p.label
+
+
+let manyChars cp =
+    many cp |>> csToS
+
+let manyChars1 cp =
+    many1 cp |>> csToS
+
+// A keyword should be followed by whitespace
+let keywords = ["print";"let";"in"]
+// Use with another parser, like `keyword (pString "print")
+let keyword p =
+    p .>> separator
+
+
+let pDigit = satisfy Char.IsDigit "digit" //anyOf ['0'..'9']
+let pInt =
+    let toSignedInt (sign, digits) =
+        let i = digits |> int //No overflow checking yet
+        match sign with
+            | Some _ -> -i
+            | None -> i
+    let digits = manyChars1 pDigit
+    opt pMinus .>>. digits
+    |> mapP toSignedInt
+    <?> "integer"
+
+// compare char to ascii-range 'A'..'Z' @ 'a'..'z'
+let isLetter : char -> bool = (int >> fun x ->
+                               (0x41 <= x && x <= 0x5a) ||
+                               (0x61 <= x && x <= 0x7a))
+let pLetter = satisfy isLetter "letter"
+let pLetterOrDigit = (pLetter <|> pDigit) <?> "letter or digit"
+
+
+
 
 // Parse an identifier, i.e. VName
 // TODO FIX THIS WEIRD MESS
@@ -430,8 +452,7 @@ let pIdent =
                 else Ok ((sRes:VName), rem)
     {parseFun=inner; label="identifier"}
 
-
-let pConst = many1 pDigit .>> skipMany whitespace |>>  (csToS >> int >> fun x -> Const (Int x))
+let pConst = pInt .>> skipMany whitespace |>> Int |>> Const
 let pVar = pIdent .>> skipMany whitespace |>> Var
 let pBinOp =
     let inner input =
