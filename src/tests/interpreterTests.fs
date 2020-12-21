@@ -1,3 +1,5 @@
+// SUperduper outdate - do not make sense with the current interpreter.
+// TODO - REDO tests
 module InterpreterTest
 open AST
 open Interpreter
