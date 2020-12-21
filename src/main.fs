@@ -2,7 +2,7 @@ open System.IO
 
 open AST
 open Parser
-open CodeGenerator
+//open CodeGenerator
 open Interpreter
 
 
@@ -11,10 +11,10 @@ let readFile filename =
     with _ -> sprintf "Error when opening file %s." filename |> Error
 
 
-let readParseCompileAndWrite inputFilename outputFilename =
-    readFile inputFilename
-    |> Result.bind parse
-    |> Result.bind (compileAndWrite outputFilename)
+// let readParseCompileAndWrite inputFilename outputFilename =
+//     readFile inputFilename
+//     |> Result.bind parse
+//     |> Result.bind (compileAndWrite outputFilename)
 
 
 let rec repl handler =
@@ -23,23 +23,20 @@ let rec repl handler =
     | "exit" | "q" | "quit" -> ()
     | input ->
         handler input; repl handler
-        // parse input
-        // |> Result.bind eval
-        // |> handler; repl handler
 
 let pRes = function
-    | Ok res -> printfn "%d" res
-    | Error msg -> printfn "%s" msg
+    | res,None -> printfn "%A" res
+    | res,Some msg -> printfn "Output: %A\nErrors:%A" res msg
 
-let rec default'handler = (parse >> Result.bind eval >> pRes)
+//let rec default'handler = (parse >> Result.bind execute >> pRes)
 let rec debug'handler input =
     printfn "Parsing %A" input
     let parseRes = parse input
     printfn "Result of parse: %A" parseRes
     printfn "Evaluating in the interpreter..."
-    let eRes = Result.bind eval parseRes
-    printf "Result of eval: "
-    pRes eRes
+    match parseRes with
+        | Ok prog -> execute prog |> pRes
+        | _ -> printfn "Error while parsing. Can not evaluate."
 
 
 
@@ -54,8 +51,9 @@ let repl' debug =
     //     match res with
     //         | Ok res -> printfn "%d" res
     //         | Error msg -> printfn "%s" msg
-    if debug then repl debug'handler
-    else repl default'handler
+    // if debug then
+    repl debug'handler
+    // else repl default'handler
     0
 
 
@@ -72,23 +70,23 @@ let usage =
 let main args =
     let exitcode =
         match args with
-        | [|"-i"|] ->  repl' false
-        | [|"-i";"-d"|] ->  repl' true
+        | [|"-i"|] ->  repl' true
+        // | [|"-i";"-d"|] ->  repl' true
         | [|"-p";inputfile|] ->
             printfn "parsing %s" inputfile
             inputfile |> (readFile >> Result.bind parse >> printfn "%A"); 0
-        | [|inputFilePath|] ->
-            let outputFilePath = inputFilePath.Split(".").[0]
-            printfn "Will compile %s and save as %s" inputFilePath outputFilePath
-            match readParseCompileAndWrite inputFilePath outputFilePath with
-                | Ok msg -> printfn "%s" msg; 0
-                | Error err -> printfn "%s" err; 1
-        | [|inputFilePath;"-o";outputFilePath|] ->
+        // | [|inputFilePath|] ->
+        //     let outputFilePath = inputFilePath.Split(".").[0]
+        //     printfn "Will compile %s and save as %s" inputFilePath outputFilePath
+        //     match readParseCompileAndWrite inputFilePath outputFilePath with
+        //         | Ok msg -> printfn "%s" msg; 0
+        //         | Error err -> printfn "%s" err; 1
+        // | [|inputFilePath;"-o";outputFilePath|] ->
 
-            printfn "Will compile %s and save as %s" inputFilePath outputFilePath
-            match readParseCompileAndWrite inputFilePath outputFilePath with
-                | Ok msg -> printfn "%s" msg; 0
-                | Error err -> printfn "%s" err; 1
+        //     printfn "Will compile %s and save as %s" inputFilePath outputFilePath
+        //     match readParseCompileAndWrite inputFilePath outputFilePath with
+        //         | Ok msg -> printfn "%s" msg; 0
+        //         | Error err -> printfn "%s" err; 1
         | [|"-h"|] | [|"--help"|]
         | _ -> printfn "%s" usage; 0
 

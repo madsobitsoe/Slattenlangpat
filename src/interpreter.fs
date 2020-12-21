@@ -1,8 +1,8 @@
 module Interpreter
 open AST
-type EvalError = string
-type EvalResult = int
-type Eval = Result<EvalResult,EvalError>
+// type EvalError = string
+// type EvalResult = int
+// type Eval = Result<EvalResult,EvalError>
 
 // An environment is a function
 // type Environment = VName -> Result<Expr,string>
@@ -24,7 +24,7 @@ type Eval = Result<EvalResult,EvalError>
 
 type Environment = (VName * Value) list
 
-type RunError = ErrBadVar of VName
+type RunError = ErrBadVar of VName | ErrBadFun of FName
 type Comp<'a> = AComp of (Environment -> Result<'a,RunError> * string list)
 
 let runComp comp env : (Result<'a,RunError> * string list) =
@@ -92,6 +92,8 @@ let apply fname args =
         output "" |> ignore
         Comp.ret Unit
     | "print", (Int i::_) -> sprintf "%d" i |> output >>= (fun _ -> Comp.ret Unit)
+    | "print", (String s::_) -> output s >>= (fun _ -> Comp.ret Unit)
+    | name,_ -> abort (ErrBadFun name)
 
 let rec eval = function
     | Const c -> Comp.ret c

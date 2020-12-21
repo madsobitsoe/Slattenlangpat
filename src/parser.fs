@@ -457,10 +457,10 @@ let pVar = pIdent .>> skipMany whitespace |>> Var
 let pBinOp =
     let inner input =
         match runOnInput pPlus input with
-            | Ok (_,rem) -> Ok ( (fun a b -> Add (a,b)), rem)
+            | Ok (_,rem) -> Ok ( (fun a b -> Oper (Plus,a,b)), rem)
             | Error err ->
                 match runOnInput pMinus input with
-                    | Ok (_,rem) -> Ok ((fun a b -> Sub (a,b)), rem)
+                    | Ok (_,rem) -> Ok ((fun a b -> Oper (Minus, a,b)), rem)
                     | Error err ->  Error err
     {parseFun=inner; label="expression(s separated by binary ops)"}
 
@@ -475,18 +475,19 @@ let pExpr,pExprRef =
     setLabel pExpr "expression",pExprRef
 
 // Let-expressions contain expressions, so the parser should be defined after the expression parser.
-let pLetExpr =
-    let f name e1 e2 = Let (name,e1,e2)
-    let idP = keyword (pString "let") >>. pIdent .>> (skipMany whitespace .>>. pEquals .>>. skipMany whitespace)
-    let e1P = pExpr .>> separator
-    let e2P = keyword (pString "in") >>. pExpr .>> many whitespace
-    // lift f to Parser<f> and apply it to the 3 subparsers of the let-expr.
-    // thus creating a Parser<Expr>
-    returnP f <*> idP <*> e1P <*> e2P
-    <?> "let IDENTIFIER = EXPR1 in EXPR2"
+// let pLetExpr =
+//     let f name e1 e2 = Let (name,e1,e2)
+//     let idP = keyword (pString "let") >>. pIdent .>> (skipMany whitespace .>>. pEquals .>>. skipMany whitespace)
+//     let e1P = pExpr .>> separator
+//     let e2P = keyword (pString "in") >>. pExpr .>> many whitespace
+//     // lift f to Parser<f> and apply it to the 3 subparsers of the let-expr.
+//     // thus creating a Parser<Expr>
+//     returnP f <*> idP <*> e1P <*> e2P
+//     <?> "let IDENTIFIER = EXPR1 in EXPR2"
 // Generate Print expressions
+
 let pPrintExpr =
-    keyword (pString "print") >>. pExpr |> mapP (fun x -> Print x)
+    keyword (pString "print") >>. pExpr |> mapP (fun x -> Call ("print", [x]))
     <?> "print EXPR"
 
 
@@ -495,16 +496,35 @@ let pExprT2 =
 let pExprT1 =
     pConst
     <|> pVar
-    <|> pLetExpr
+//    <|> pLetExpr
     <|> pPrintExpr
     <|> pExprT2
 
 // Set up the actual top-level parser, so it can be used recursively by sub-parsers
 pExprRef := chainl1 pExprT1 pBinOp
 
-let parse (program:string) : Result<Expr,string> =
+// let parse (program:string) : Result<Expr,string> =
+//     let inputState = inputStateFromString program
+//     match runOnInput pExpr inputState with
+//         | Ok (res,state) ->
+//             match getCurrentLine state with
+//                 | "EOF" -> Ok res
+//                 | rem -> sprintf "Did not consume all input. Left: %s..." rem |> Error
+//         | Error err -> Error (parseResultToString (Error err))
+
+let pStatement =
+    (keyword (pString "let") >>. pIdent .>> pEquals .>>. pExpr .>> many whitespace) |>> (fun (name,exp) -> SDef (name,exp))
+    <|> (pExpr |>> SExp )
+
+// For now, separate statements with ";" - this will have to change later
+let pProgram : Parser<Program * InputState> =
+    skipMany whitespace
+    >>. sepBy1 pStatement (keyword (pString ";"))// separator
+
+
+let parse (program:string) : Result<Program,string> =
     let inputState = inputStateFromString program
-    match runOnInput pExpr inputState with
+    match runOnInput pProgram inputState with
         | Ok (res,state) ->
             match getCurrentLine state with
                 | "EOF" -> Ok res
