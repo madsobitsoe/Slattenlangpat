@@ -12,19 +12,19 @@ slpc.exe: src/ast.fs src/parser.fs src/interpreter.fs  src/main.fs
 parserTests.exe: src/ast.fs src/parser.fs src/tests/testUtil.fs src/tests/parserTests.fs
 	fsharpc src/ast.fs src/parser.fs src/tests/testUtil.fs src/tests/parserTests.fs
 
-interpreterTests.exe: src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs
-	fsharpc src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs
+# interpreterTests.exe: src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs
+# 	fsharpc src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs
 
 
 .PHONY: test
-test: parserTests.exe interpreterTests.exe
+test: parserTests.exe
 	mono parserTests.exe
-	mono interpreterTests.exe
+
 
 .PHONY: testv
-testv: parserTests.exe interpreterTests.exe
+testv: parserTests.exe
 	mono parserTests.exe -v
-	mono interpreterTests.exe -v
+
 
 
 
