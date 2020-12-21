@@ -1,6 +1,7 @@
 module TestUtil
-
-
+// open System.Console
+// open System.ConsolorColor
+type Color = System.ConsoleColor
 
 
 // A TestCase is a tuple of input * expected
@@ -40,8 +41,28 @@ let test (f:'a -> Result<'b,string>) = function
                     | actual -> Failure (ATestCase (input,expected), actual)
 
 
+let printSuccess (s:string) =
+    System.Console.ForegroundColor <- Color.Green
+    System.Console.Write ("[PASSED]")
+    System.Console.ResetColor()
+    System.Console.WriteLine(s)
+
+let printFail (f:string) =
+    System.Console.ForegroundColor <- Color.Red
+    System.Console.Write( "[FAILED]")
+    System.Console.ResetColor()
+    System.Console.WriteLine f
+let printInternalError (ie:string) =
+    System.Console.ForegroundColor <- Color.Yellow
+    System.Console.Write "[ERROR]"
+    System.Console.ResetColor()
+    System.Console.WriteLine ie
+
 // Print test results
 let pf = function
-    | Success (ATestCase (i,e)) -> printfn "[PASSED] Input: %A\nExpected: %A" i e
-    | Failure (ATestCase (i,e),a) ->  printfn "[FAILED] Input: %A\nExpected: %A\nGot: %A" i e a
-    | InternalError (ATestCase (i,e),errmsg) ->  printfn "[ERROR] Input: %A\nExpected: %A\nGot: %A" i e errmsg
+    | Success (ATestCase (i,e)) ->
+        sprintf "Input: %A\n\tExpected: %A" i e |> printSuccess
+    | Failure (ATestCase (i,e),a) ->
+        sprintf "Input: %A\n\tExpected: %A\n\tGot: %A" i e a |> printFail
+    | InternalError (ATestCase (i,e),errmsg) ->
+        sprintf "Input: %A\n\tExpected: %A\n\tGot: %A" i e errmsg |> printInternalError
