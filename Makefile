@@ -1,10 +1,6 @@
 CC=fsharpc
 CFLAGS=--nologo
 
-
-# slpc.exe: src/ast.fs src/parser.fs src/interpreter.fs  src/main.fs
-# 	fsharpc src/ast.fs src/parser.fs src/interpreter.fs src/main.fs -o slpc.exe
-
 slpc.exe: src/ast.fs src/parser.fs src/interpreter.fs src/codeGenerator.fs src/main.fs
 	fsharpc src/ast.fs src/parser.fs src/interpreter.fs src/codeGenerator.fs src/main.fs -o slpc.exe
 
@@ -12,19 +8,20 @@ slpc.exe: src/ast.fs src/parser.fs src/interpreter.fs src/codeGenerator.fs src/m
 parserTests.exe: src/ast.fs src/parser.fs src/tests/testUtil.fs src/tests/parserTests.fs
 	fsharpc src/ast.fs src/parser.fs src/tests/testUtil.fs src/tests/parserTests.fs
 
-# interpreterTests.exe: src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs
-# 	fsharpc src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs
+interpreterTests.exe: src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs
+	fsharpc src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs
 
 
 .PHONY: test
-test: parserTests.exe
+test: parserTests.exe interpreterTests.exe
 	mono parserTests.exe
+	mono interpreterTests.exe
 
 
 .PHONY: testv
-testv: parserTests.exe
+testv: parserTests.exe interpreterTests.exe
 	mono parserTests.exe -v
-
+	mono interpreterTests.exe -v
 
 
 

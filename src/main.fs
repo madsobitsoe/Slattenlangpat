@@ -34,8 +34,8 @@ let rec repl handler =
         handler input; repl handler
 
 let pRes = function
-    | res,None -> printfn "%A" res
-    | res,Some msg -> printfn "Output: %A\nErrors:%A" res msg
+    | outputs,Ok value -> printfn "val it : TYPE = %A\n%s" (List.head value) <| List.fold (+) "" outputs
+    | outputs,Error msg -> printfn "Output: %s\nErrors:%A" (List.fold (+) "" outputs) msg
 
 //let rec default'handler = (parse >> Result.bind execute >> pRes)
 let rec debug'handler input =
