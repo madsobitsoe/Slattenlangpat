@@ -5,7 +5,7 @@ open TestUtil
 
 let testcases'const : TestCase<string,Result<Program,string>> list =
     [
-        "1",  Ok       ([SExp (Const (Int 1))]:Program);
+        "1",  Ok       [SExp (Const (Int 1))];
         "2",  Ok       [SExp (Const (Int 2))];
         "3",  Ok       [SExp (Const (Int 3))];
         "0",  Ok       [SExp (Const (Int 0))];
