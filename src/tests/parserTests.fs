@@ -5,7 +5,7 @@ open TestUtil
 
 let testcases'const : TestCase<string,Result<Program,string>> list =
     [
-        "1",  Ok       [SExp (Const (Int 1))];
+        "1",  Ok       ([SExp (Const (Int 1))]:Program);
         "2",  Ok       [SExp (Const (Int 2))];
         "3",  Ok       [SExp (Const (Int 3))];
         "0",  Ok       [SExp (Const (Int 0))];
@@ -37,6 +37,31 @@ let testcases'add'parens : TestCase<string,Result<Program,string>> list =
         "1+(2+3+4)"     , Ok [SExp (Oper (Plus, Const (Int 1), Oper (Plus, Oper (Plus, Const (Int 2), Const (Int 3)), Const (Int 4))))];
         ] |> List.map returnT
 
+
+
+let testcases'strings : TestCase<string,Result<Program,string>> list =
+    [
+        "\"\"", Ok [SExp (Const (String ""))];        
+        "\"a\"", Ok [SExp (Const (String "a"))];
+        "\"abc\"", Ok [SExp (Const (String "abc"))];
+        "\"abc\\ndef\"", Ok [SExp (Const (String "abc\ndef"))];        
+
+    ] |> List.map returnT
+
+
+
+
+let testcases'let'bindings : TestCase<string,Result<Program,string>> list =
+    [
+        "let a = 2", Ok [SDef ("a", (Const (Int 2)))];
+        "let a = 2; a", Ok [SDef ("a", (Const (Int 2))); SExp (Var "a")];
+        "let a = 1; let b = 2; let c = 3; a + b + c", Ok [SDef ("a", (Const (Int 1))); SDef ("b", (Const (Int 2)));SDef ("c", (Const (Int 3)));SExp (Oper (Plus, Oper (Plus, Var "a", Var "b"), Var "c"))];        
+    ] |> List.map returnT
+
+
+
+
+
 let testcases'invalid'parses : TestCase<string,Result<Program,string>> list =
     [
 
@@ -54,7 +79,10 @@ let parserTests = ATestSuite <| (test parse,
                                  testcases'const
                                  @ testcases'add
                                  @ testcases'add'parens
-                                 @ testcases'invalid'parses)
+                                 @ testcases'strings
+                                 @ testcases'let'bindings
+                                 @ testcases'invalid'parses
+                                 )
 
 let testResults = runTests parserTests
 let passed : TestResult<string,Result<Program,string>> list =
