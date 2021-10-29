@@ -1,6 +1,4 @@
 module TestUtil
-// open System.Console
-// open System.ConsolorColor
 type Color = System.ConsoleColor
 
 
@@ -10,8 +8,6 @@ type TestCase<'a,'b> = ATestCase of 'a * 'b
 type TestResult<'a,'b> = Success of TestCase<'a, 'b> | Failure of TestCase<'a, 'b> * 'b | InternalError of TestCase<'a, 'b> * string
 // A TestSuite is a list of functions and their associated list of TestCases
 type TestSuite<'f, 't> = ATestSuite of 'f * List<'t>
-
-
 
 
 // Lift a tuple of input * expected to TestCase<'a,'b>
