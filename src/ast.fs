@@ -10,7 +10,6 @@ type Expr =
     | Const of Value
     | Var of VName
     | Oper of Op * Expr * Expr
-//    | Let of VName * Expr * Expr
     | Call of VName * Expr list
     | Print of Expr
 
