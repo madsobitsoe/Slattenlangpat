@@ -44,7 +44,11 @@ let operate op a b =
     match op,a,b with
         | Plus,Int a, Int b -> Ok (a + b |> Int)
         | Minus,Int a, Int b -> Ok (a - b |> Int)
-        | _ -> Error "Op not implemented yet"
+        | Plus, String a, String b -> Ok (a + b |> String)
+        | Minus, String _, _ -> Error <| sprintf "Operator %A not defined for String" op
+        | Minus, _, String _ -> Error <| sprintf "Operator %A not defined for String" op
+        | op, Unit _, _ ->   Error <| sprintf "Operator %A not defined for Unit" op
+        | op, _, Unit _ ->   Error <| sprintf "Operator %A not defined for Unit" op
 
 
 let apply fname args =

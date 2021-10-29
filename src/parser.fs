@@ -271,6 +271,19 @@ let many1 p =
 
     {parseFun=inner; label=label}
 
+
+
+let manyUntil p (until:char) =
+    let label = sprintf "Many %s until %c" p.label until
+    let rec inner acc input =
+        match runOnInput p input with
+            | Ok (r, rem) when r = until   -> Ok (List.rev acc, rem)
+            | Ok (r, rem) -> inner (r::acc) rem            
+            | Error e -> Error e
+
+    {parseFun=(inner []); label=label}
+
+
 let skipMany p =
     {parseFun=(fun input ->
                 let (_,rem) = pZeroOrMore p input
@@ -375,6 +388,13 @@ let pChar c =
     |> satisfy <| sprintf "%c" c
 
 
+let anything =
+    satisfy (fun _ -> true)  "literally anything"
+    
+// let pNotChar c =
+//     (<>) c
+//     |> satisfy <| sprintf "not %c" c
+
 let anyOf chars =
     let label = sprintf "any of %A" chars
     chars
@@ -405,6 +425,12 @@ let manyChars cp =
 
 let manyChars1 cp =
     many1 cp |>> csToS
+
+let pDQ = pChar '"' 
+
+let pNewLine = pString "\\n" |>> (fun _ -> '\n')
+
+let pStringValue = pDQ >>. (manyUntil (pNewLine <|> anything) '"') <?> "string literal"
 
 // A keyword should be followed by whitespace
 let keywords = ["print";"let";"in"]
@@ -452,8 +478,13 @@ let pIdent =
                 else Ok ((sRes:VName), rem)
     {parseFun=inner; label="identifier"}
 
-let pConst = pInt .>> skipMany whitespace |>> Int |>> Const
+let pConst =
+    (pStringValue .>> skipMany whitespace |>> csToS |>> AST.String |>> Const)
+    <|>
+    (pInt .>> skipMany whitespace |>> Int |>> Const)
+
 let pVar = pIdent .>> skipMany whitespace |>> Var
+
 let pBinOp =
     let inner input =
         match runOnInput pPlus input with
@@ -463,6 +494,11 @@ let pBinOp =
                     | Ok (_,rem) -> Ok ((fun a b -> Oper (Minus, a,b)), rem)
                     | Error err ->  Error err
     {parseFun=inner; label="expression(s separated by binary ops)"}
+
+
+
+
+
 
 
 // Deal with F# stupid non-lazyness and freaky (sane) rules for mutually recursive definitions
@@ -496,21 +532,12 @@ let pExprT2 =
 let pExprT1 =
     pConst
     <|> pVar
-//    <|> pLetExpr
     <|> pPrintExpr
     <|> pExprT2
 
 // Set up the actual top-level parser, so it can be used recursively by sub-parsers
 pExprRef := chainl1 pExprT1 pBinOp
 
-// let parse (program:string) : Result<Expr,string> =
-//     let inputState = inputStateFromString program
-//     match runOnInput pExpr inputState with
-//         | Ok (res,state) ->
-//             match getCurrentLine state with
-//                 | "EOF" -> Ok res
-//                 | rem -> sprintf "Did not consume all input. Left: %s..." rem |> Error
-//         | Error err -> Error (parseResultToString (Error err))
 
 let pStatement =
     (keyword (pString "let") >>. pIdent .>> pEquals .>>. pExpr .>> many whitespace) |>> (fun (name,exp) -> SDef (name,exp))
