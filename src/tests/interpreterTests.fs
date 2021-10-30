@@ -39,11 +39,20 @@ let testcases'sub : TestCase<Program,Result<string list * Result<Value list,RunE
     ] |> List.map returnT
 
 
+let testcases'match : TestCase<Program,Result<string list * Result<Value list,RunError>,string>> list =
+    [
+        [SExp (Match (Const (Int 1), [Const (Int 1), Const (Int 2)]))],  Ok ([], Ok [Int 2]);
+        [SExp (Match (Const (Int 2), [(Const (Int 1), Const (Int 2)); (Const (Int 2), Const (Int 1))]))],  Ok ([], Ok [Int 1]);
+        [SExp (Match (Const (Int 1), [Const (Int 1), Const (String "wow, typechange!")]))],  Ok ([], Ok [String "wow, typechange!"]);        
+    ] |> List.map returnT
+
+
 // wrap results from execute in Ok, so it fits with the testsuite
 let allTests = ATestSuite <| (test (execute >> Ok),
                               testcases'const
                               @ testcases'add
-                              @ testcases'sub)
+                              @ testcases'sub
+                              @ testcases'match)
 
 let testResults = runTests allTests
 let passed : TestResult<Program,Result<string list * Result<Value list,RunError>,string>> list =

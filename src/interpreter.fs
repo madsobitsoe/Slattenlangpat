@@ -3,7 +3,7 @@ open AST
 
 type Environment = (VName * Value) list
 
-type RunError = ErrBadVar of VName | ErrBadFun of FName | ErrUndefinedOp of Op * Value * Value
+type RunError = ErrBadVar of VName | ErrBadFun of FName | ErrUndefinedOp of Op * Value * Value | ErrBadMatch of string
 type Comp<'a> = AComp of (Environment -> Result<'a,RunError> * string list)
 
 let runComp comp env : (Result<'a,RunError> * string list) =
@@ -80,6 +80,11 @@ let rec eval = function
     | Call ("print", e::es) ->
         eval e >>= (fun res1 ->
                      apply "print" [res1])
+    | Match (e1, es) ->
+        match List.tryFind (fun (e,resE) -> e1 = e) es with
+            | None -> abort (ErrBadMatch <| sprintf "couldn't match %A in %A" e1 es)
+            | Some (e,resE) -> eval resE
+            
     | _ -> abort (ErrBadVar "NOT IMPLEMENTED")
 
 

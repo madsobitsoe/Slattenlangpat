@@ -115,7 +115,7 @@ It can generate an Elf64-binary that sets the statuscode to a supplied value, an
 Program ::= Stmts
 Stmts ::= Stmt ';'
         | Stmt ';' Stmts
-Stmt  ::= 'let' ident '=' Expr 'in' Expr
+Stmt  ::= 'let' ident '=' Expr
         | Expr
 
 Expr  ::= '()'
@@ -126,6 +126,7 @@ Expr  ::= '()'
         | Expr Oper Expr
         | ident Exprs
         | '(' Expr ')'
+        | 'match' Expr 'with' 
 Oper  ::= '+' 
         | '-'
         | '='
@@ -138,3 +139,7 @@ Oper  ::= '+'
 Exprs ::=
 	    | Expr
         | Expr Exprs
+
+MCase  '|' Expr '->' Expr 
+MCases ::= MCase
+        | MCase MCases

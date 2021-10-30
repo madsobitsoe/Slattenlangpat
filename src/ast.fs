@@ -12,6 +12,7 @@ type Expr =
     | Oper of Op * Expr * Expr
     | Call of VName * Expr list
     | Print of Expr
+    | Match of Expr * (Expr * Expr) list
 
 type Statement =
     | SDef of VName * Expr
