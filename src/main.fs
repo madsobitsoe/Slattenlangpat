@@ -42,7 +42,7 @@ let parseResToString = function
     | Ok prog -> sprintf "OK %A" prog
     | Error err -> sprintf "Error: %s" err
     
-//let rec default'handler = (parse >> Result.bind execute >> pRes)
+
 let rec debug'handler input =
     printfn "Parsing %A" input
     let parseRes = parse input
@@ -51,10 +51,6 @@ let rec debug'handler input =
     match parseRes with
         | Ok prog -> execute prog |> pRes
         | _ -> printfn "Error while parsing. Can not evaluate."
-
-
-
-
 
 let repl' debug =
     let replmsg =
