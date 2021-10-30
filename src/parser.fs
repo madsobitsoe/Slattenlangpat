@@ -143,13 +143,7 @@ let pIdent =
                 else Ok ((sRes:VName), rem)
     {parseFun=inner; label="identifier"}
 
-let pConst =
-    (pBool
-    <|>
-    (pStringValue)
-    <|>
-    (pInt))
-    .>> separator
+let pConst = (pBool <|> pStringValue <|> pInt) .>> separator
 
 let pVar = pIdent .>> separator |>> Var
 
@@ -157,21 +151,6 @@ let pVar = pIdent .>> separator |>> Var
 let pBinOp =
     (pPlus <|> pMinus <|> pEQ <|> pLTE <|> pGTE <|> pNotEQ <|> pLT <|> pGT )
     .>> separator
-
-// let pBinOp =
-//     let inner input =
-//         match runOnInput pPlus input with
-//             | Ok (_,rem) -> Ok ( (fun a b -> Oper (Plus,a,b)), rem)
-//             | Error err ->
-//                 match runOnInput pMinus input with
-//                     | Ok (_,rem) -> Ok ((fun a b -> Oper (Minus, a,b)), rem)
-//                     | Error err ->  Error err
-//     {parseFun=inner; label="expression(s separated by binary ops)"}
-
-
-
-
-
 
 
 // Deal with F# stupid non-lazyness and freaky (sane) rules for mutually recursive definitions

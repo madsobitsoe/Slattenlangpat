@@ -3,7 +3,7 @@ open AST
 
 type Environment = (VName * Value) list
 
-type RunError = ErrBadVar of VName | ErrBadFun of FName
+type RunError = ErrBadVar of VName | ErrBadFun of FName | ErrUndefinedOp of Op * Value * Value
 type Comp<'a> = AComp of (Environment -> Result<'a,RunError> * string list)
 
 let runComp comp env : (Result<'a,RunError> * string list) =
@@ -40,15 +40,23 @@ let withBinding name value comp = AComp (fun env ->
 let output s = AComp (fun _ -> Ok (), [s])
 
 
+// Handle binary operations
 let operate op a b =
     match op,a,b with
+        | EQ, Bool a, Bool b -> Ok (a = b |> Bool)
+        | NotEQ, Bool a, Bool b -> Ok (a <> b |> Bool)
+        | EQ, Int a, Int b -> Ok (a = b |> Bool)
+        | NotEQ, Int a, Int b -> Ok (a <> b |> Bool)
+        | LT, Int a, Int b -> Ok (a < b |> Bool)
+        | GT, Int a, Int b -> Ok (a > b |> Bool)
+        | LTE, Int a, Int b -> Ok (a <= b |> Bool)
+        | GTE, Int a, Int b -> Ok (a >= b |> Bool)
+        | EQ, String a, String b -> Ok (a = b |> Bool)
+        | NotEQ, String a, String b -> Ok (a <> b |> Bool)
         | Plus,Int a, Int b -> Ok (a + b |> Int)
         | Minus,Int a, Int b -> Ok (a - b |> Int)
         | Plus, String a, String b -> Ok (a + b |> String)
-        | Minus, String _, _ -> Error <| sprintf "Operator %A not defined for String" op
-        | Minus, _, String _ -> Error <| sprintf "Operator %A not defined for String" op
-        | op, Unit _, _ ->   Error <| sprintf "Operator %A not defined for Unit" op
-        | op, _, Unit _ ->   Error <| sprintf "Operator %A not defined for Unit" op
+        | op, a, b -> Error (ErrUndefinedOp (op, a, b))
 
 
 let apply fname args =
@@ -68,7 +76,7 @@ let rec eval = function
         eval e2 >>= (fun (res2) ->
                        match operate op res1 res2 with
                        | Ok v -> Comp.ret v
-                       | Error e -> abort (ErrBadVar e)))
+                       | Error e -> abort e))
     | Call ("print", e::es) ->
         eval e >>= (fun res1 ->
                      apply "print" [res1])
