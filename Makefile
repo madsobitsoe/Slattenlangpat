@@ -1,12 +1,15 @@
 CC=fsharpc
 CFLAGS=--nologo
 
-slpc.exe: src/ast.fs src/parser.fs src/interpreter.fs src/codeGenerator.fs src/main.fs
-	fsharpc src/ast.fs src/parser.fs src/interpreter.fs src/codeGenerator.fs src/main.fs -o slpc.exe
+slpc.exe: src/ast.fs parserLib.dll src/parser.fs src/interpreter.fs src/codeGenerator.fs src/main.fs
+	fsharpc -r parserLib.dll src/ast.fs src/parser.fs src/interpreter.fs src/codeGenerator.fs src/main.fs -o slpc.exe
 
 
-parserTests.exe: src/ast.fs src/parser.fs src/tests/testUtil.fs src/tests/parserTests.fs
-	fsharpc src/ast.fs src/parser.fs src/tests/testUtil.fs src/tests/parserTests.fs
+parserLib.dll: src/parserLib.fs
+	fsharpc -a src/parserLib.fs -o parserLib.dll
+
+parserTests.exe: src/ast.fs parserLib.dll src/parser.fs src/tests/testUtil.fs src/tests/parserTests.fs
+	fsharpc -r parserLib.dll src/ast.fs src/parser.fs src/tests/testUtil.fs src/tests/parserTests.fs
 
 interpreterTests.exe: src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs
 	fsharpc src/ast.fs src/interpreter.fs src/tests/testUtil.fs src/tests/interpreterTests.fs

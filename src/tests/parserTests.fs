@@ -3,48 +3,71 @@ open AST
 open Parser
 open TestUtil
 
-let testcases'const : TestCase<string,Result<Program,string>> list =
+let testcases'const'int : TestCase<string,Result<Program,string>> list =
     [
-        "1",  Ok       [SExp (Const (Int 1))];
-        "2",  Ok       [SExp (Const (Int 2))];
-        "3",  Ok       [SExp (Const (Int 3))];
-        "0",  Ok       [SExp (Const (Int 0))];
-        "-1", Ok       [SExp (Const (Int (-1)))];
-        "01", Ok       [SExp (Const (Int 1))];
-        "10", Ok       [SExp (Const (Int 10))];
-        "123456789",Ok [SExp (Const (Int 123456789))];
+        "1;",  Ok       [SExp (Const (Int 1))];
+        "2;",  Ok       [SExp (Const (Int 2))];
+        "3;",  Ok       [SExp (Const (Int 3))];
+        "0;",  Ok       [SExp (Const (Int 0))];
+        "-1;", Ok       [SExp (Const (Int (-1)))];
+        "01;", Ok       [SExp (Const (Int 1))];
+        "10;", Ok       [SExp (Const (Int 10))];
+        "123456789;",Ok [SExp (Const (Int 123456789))];
         ] |> List.map returnT
+
+
+let testcases'const'bool: TestCase<string,Result<Program,string>> list =
+    [
+      "true;",  Ok [SExp (Const (Bool true))];
+      "false;", Ok [SExp (Const (Bool false))];      
+    ] |> List.map returnT
+
 
 let testcases'add : TestCase<string,Result<Program,string>> list =
     [
-        "0+0",    Ok [SExp (Oper (Plus, (Const (Int 0)), Const (Int 0)))];
-        "1+1",    Ok [SExp (Oper (Plus, (Const (Int 1)), Const (Int 1)))];
-        "2+2",    Ok [SExp (Oper (Plus, (Const (Int 2)), Const (Int 2)))];
-        "3+3",    Ok [SExp (Oper (Plus, (Const (Int 3)), Const (Int 3)))];
-        "4+4",    Ok [SExp (Oper (Plus, (Const (Int 4)), Const (Int 4)))];
-        "1+2+3",  Ok [SExp (Oper (Plus, (Oper (Plus, Const (Int 1), Const (Int 2))), Const (Int 3)))]; // left associativity
-        "1+2+3+4",Ok [SExp (Oper (Plus, Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)), Const (Int 4)))]; // left associativi)ty
+        "0+0;",    Ok [SExp (Oper (Plus, (Const (Int 0)), Const (Int 0)))];
+        "1+1;",    Ok [SExp (Oper (Plus, (Const (Int 1)), Const (Int 1)))];
+        "2+2;",    Ok [SExp (Oper (Plus, (Const (Int 2)), Const (Int 2)))];
+        "3+3;",    Ok [SExp (Oper (Plus, (Const (Int 3)), Const (Int 3)))];
+        "4+4;",    Ok [SExp (Oper (Plus, (Const (Int 4)), Const (Int 4)))];
+        "1+2+3;",  Ok [SExp (Oper (Plus, (Oper (Plus, Const (Int 1), Const (Int 2))), Const (Int 3)))]; // left associativity
+        "1+2+3+4;",Ok [SExp (Oper (Plus, Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)), Const (Int 4)))]; // left associativi)ty
         ] |> List.map returnT
 
 let testcases'add'parens : TestCase<string,Result<Program,string>> list =
     [
 
-        "(1+2)+3"       , Ok [SExp (Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)))];
-        "(1 + 2) + 3"   , Ok [SExp (Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)))];
-        "(1 + 2) + 3 "  , Ok [SExp (Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)))];
-        "((1 + 2) + 3)" , Ok [SExp (Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)))];
-        "1+(2+3)"       , Ok [SExp (Oper (Plus, Const (Int 1), Oper (Plus, Const (Int 2), Const (Int 3))))];
-        "1+(2+3+4)"     , Ok [SExp (Oper (Plus, Const (Int 1), Oper (Plus, Oper (Plus, Const (Int 2), Const (Int 3)), Const (Int 4))))];
+        "(1+2)+3;"       , Ok [SExp (Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)))];
+        "(1 + 2) + 3;"   , Ok [SExp (Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)))];
+        "(1 + 2) + 3 ;"  , Ok [SExp (Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)))];
+        "((1 + 2) + 3);" , Ok [SExp (Oper (Plus, Oper (Plus, Const (Int 1), Const (Int 2)), Const (Int 3)))];
+        "1+(2+3);"       , Ok [SExp (Oper (Plus, Const (Int 1), Oper (Plus, Const (Int 2), Const (Int 3))))];
+        "1+(2+3+4);"     , Ok [SExp (Oper (Plus, Const (Int 1), Oper (Plus, Oper (Plus, Const (Int 2), Const (Int 3)), Const (Int 4))))];
         ] |> List.map returnT
+
+
+
+let testcases'operators : TestCase<string,Result<Program,string>> list =
+    [
+        "1<2;", Ok [SExp (Oper (LT, Const (Int 1), Const (Int 2)))];
+        "1=2;", Ok [SExp (Oper (EQ, Const (Int 1), Const (Int 2)))];
+        "1>2;", Ok [SExp (Oper (GT, Const (Int 1), Const (Int 2)))];
+        "1<=2;", Ok [SExp (Oper (LTE, Const (Int 1), Const (Int 2)))];
+        "1>=2;", Ok [SExp (Oper (GTE, Const (Int 1), Const (Int 2)))];
+        "1<>2;", Ok [SExp (Oper (NotEQ, Const (Int 1), Const (Int 2)))];                                
+        
+    ] |> List.map returnT
+
+
 
 
 
 let testcases'strings : TestCase<string,Result<Program,string>> list =
     [
-        "\"\"", Ok [SExp (Const (String ""))];        
-        "\"a\"", Ok [SExp (Const (String "a"))];
-        "\"abc\"", Ok [SExp (Const (String "abc"))];
-        "\"abc\\ndef\"", Ok [SExp (Const (String "abc\ndef"))];        
+        "\"\";", Ok [SExp (Const (String ""))];        
+        "\"a\";", Ok [SExp (Const (String "a"))];
+        "\"abc\";", Ok [SExp (Const (String "abc"))];
+        "\"abc\\ndef\";", Ok [SExp (Const (String "abc\ndef"))];        
 
     ] |> List.map returnT
 
@@ -53,9 +76,9 @@ let testcases'strings : TestCase<string,Result<Program,string>> list =
 
 let testcases'let'bindings : TestCase<string,Result<Program,string>> list =
     [
-        "let a = 2", Ok [SDef ("a", (Const (Int 2)))];
-        "let a = 2; a", Ok [SDef ("a", (Const (Int 2))); SExp (Var "a")];
-        "let a = 1; let b = 2; let c = 3; a + b + c", Ok [SDef ("a", (Const (Int 1))); SDef ("b", (Const (Int 2)));SDef ("c", (Const (Int 3)));SExp (Oper (Plus, Oper (Plus, Var "a", Var "b"), Var "c"))];        
+        "let a = 2;", Ok [SDef ("a", (Const (Int 2)))];
+        "let a = 2; a;", Ok [SDef ("a", (Const (Int 2))); SExp (Var "a")];
+        "let a = 1; let b = 2; let c = 3; a + b + c;", Ok [SDef ("a", (Const (Int 1))); SDef ("b", (Const (Int 2)));SDef ("c", (Const (Int 3)));SExp (Oper (Plus, Oper (Plus, Var "a", Var "b"), Var "c"))];        
     ] |> List.map returnT
 
 
@@ -65,18 +88,22 @@ let testcases'let'bindings : TestCase<string,Result<Program,string>> list =
 let testcases'invalid'parses : TestCase<string,Result<Program,string>> list =
     [
 
-        "(1", Error "";
-        "1)", Error "";
-        "+1", Error "";
-        "1+", Error "";
-        "1 1", Error "";
-        "((((", Error "";
-        "let 1 = 1 in 1", Error "";
+        "(1;", Error "";
+        "1", Error "";
+        
+        "1);", Error "";
+        "+1;", Error "";
+        "1+;", Error "";
+        "1 1;", Error "";
+        "((((;", Error "";
+        "let 1 = 1 in 1;", Error "";
         ] |> List.map returnT
 
 
 let parserTests = ATestSuite <| (test parse,
-                                 testcases'const
+                                 testcases'const'int
+                                 @ testcases'const'bool
+                                 @ testcases'operators                                 
                                  @ testcases'add
                                  @ testcases'add'parens
                                  @ testcases'strings

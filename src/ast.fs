@@ -1,10 +1,10 @@
 module AST
 
 
-type Value = Int of int | String of string | Unit
+type Value = Bool of bool | Int of int | String of string | Unit
 type VName = string
 type FName = string
-type Op = Plus | Minus
+type Op = Plus | Minus | EQ | LT | GT | LTE | GTE | NotEQ
 
 type Expr =
     | Const of Value

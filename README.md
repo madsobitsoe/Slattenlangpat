@@ -109,3 +109,32 @@ The Expr `Print (Const 173034579)` will print `SLP\n` to STDOUT
 (It will in fact push 8 bytes to the stack, but since I still use signed 32-bit ints in F#, I can not supply a number larger than 4 bytes.)
 
 It can generate an Elf64-binary that sets the statuscode to a supplied value, and exits via sys_exit
+
+## Syntax
+
+Program ::= Stmts
+Stmts ::= Stmt ';'
+        | Stmt ';' Stmts
+Stmt  ::= 'let' ident '=' Expr 'in' Expr
+        | Expr
+
+Expr  ::= '()'
+        | intConst
+        | '"' stringConst '"' 
+        | ident
+        | 'true' | 'false'
+        | Expr Oper Expr
+        | ident Exprs
+        | '(' Expr ')'
+Oper  ::= '+' 
+        | '-'
+        | '='
+        | '<'
+        | '>'
+        | '<='
+        | '>='
+        | '<>'
+
+Exprs ::=
+	    | Expr
+        | Expr Exprs
