@@ -1,8 +1,8 @@
 CC=fsharpc
 CFLAGS=--nologo
 
-slpc.exe: src/ast.fs parserLib.dll src/parser.fs src/interpreter.fs src/codeGenerator.fs src/main.fs
-	fsharpc -r parserLib.dll src/ast.fs src/parser.fs src/interpreter.fs src/codeGenerator.fs src/main.fs -o slpc.exe
+slpc.exe: src/ast.fs parserLib.dll src/parser.fs src/typechecker.fs src/interpreter.fs src/codeGenerator.fs src/main.fs
+	fsharpc -r parserLib.dll src/ast.fs src/parser.fs src/typechecker.fs src/interpreter.fs src/codeGenerator.fs src/main.fs -o slpc.exe
 
 
 parserLib.dll: src/parserLib.fs

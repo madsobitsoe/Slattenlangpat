@@ -4,7 +4,7 @@ open AST
 open Parser
 open CodeGenerator
 open Interpreter
-
+open TypeChecker
 
 let readFile filename =
     try File.ReadAllText filename |> Ok
@@ -47,9 +47,15 @@ let rec debug'handler input =
     printfn "Parsing %A" input
     let parseRes = parse input
     printfn "Result of parse: %s" <| parseResToString parseRes
-    printfn "Evaluating in the interpreter..."
     match parseRes with
-        | Ok prog -> execute prog |> pRes
+        | Ok prog ->
+            match typeProgram prog with
+                | Error e -> printfn "Program did not pass typecheck."
+                | Ok typedProg ->
+                    printfn "Typed program:\n%A" typedProg
+                    printfn "Evaluating in the interpreter..."                    
+                    execute prog |> pRes
+                    
         | _ -> printfn "Error while parsing. Can not evaluate."
 
 let repl' debug =
@@ -57,10 +63,6 @@ let repl' debug =
           "Starting SLP interactive mode..."
         + "\nType exit, quit or q to quit."
     printfn "%s" replmsg
-    // let handler res =
-    //     match res with
-    //         | Ok res -> printfn "%d" res
-    //         | Error msg -> printfn "%s" msg
     // if debug then
     repl debug'handler
     // else repl default'handler
@@ -85,6 +87,10 @@ let main args =
         | [|"-p";inputfile|] ->
             printfn "parsing %s" inputfile
             inputfile |> (readFile >> Result.bind parse >> printfn "%A"); 0
+        | [|"-t";inputfile|] ->
+            printfn "parsing %s" inputfile
+            inputfile |> (readFile >> Result.bind parse >> Result.bind typeProgram >> printfn "%A"); 0
+            
         | [|inputFilePath|] ->
             let outputFilePath = inputFilePath.Split(".").[0]
             printfn "Will compile %s and save as %s" inputFilePath outputFilePath

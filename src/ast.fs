@@ -19,3 +19,21 @@ type Statement =
     | SExp of Expr
 
 type Program = Statement list
+
+
+
+type BasicType = BoolT | IntT | StringT | UnitT | UndecidedT
+type TypedExpr =
+    | TypedConst of Value * BasicType
+    | TypedVar of VName * BasicType
+    | TypedOper of (Op * TypedExpr * TypedExpr) * BasicType
+    | TypedCall of (VName * TypedExpr list) * BasicType
+    | TypedPrint of TypedExpr * BasicType
+    | TypedMatch of (TypedExpr * (TypedExpr * TypedExpr) list) * BasicType
+    
+
+type TypedStatement =
+    | TypedSDef of VName * TypedExpr
+    | TypedSExp of TypedExpr
+
+type TypedProgram = TypedStatement list
