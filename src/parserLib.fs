@@ -11,11 +11,9 @@ open System
 let (csToS : char list -> string) = List.fold (fun acc x -> string x |> (+) acc ) ""
 
 
-
 // --------------------------------
 // library part
 // --------------------------------
-
 
 type Position = {
     line : int
@@ -24,7 +22,7 @@ type Position = {
 
 let initPos = {line=0; column=0}
 let incrCol pos = { pos with column=pos.column + 1 }
-let incrLine pos = { pos with line=pos.line + 1 }
+let incrLine pos = { pos with line=pos.line + 1; column=0 }
 
 type InputState = {
     lines : string[]
@@ -53,7 +51,6 @@ let nextChar inputState =
     // Next line is outside array of lines
     if lPos >= inputState.lines.Length then
         inputState, None
-    //
     else
         let cl = getCurrentLine inputState
         // if next char is in the current line
@@ -150,12 +147,6 @@ let bindP f p =
 
 // Infix version of BindP
 let ( >>= ) p f = bindP f p
-
-
-// // type used when parsing binary ops
-// type BinOp = (Expr -> Expr -> Expr)
-
-
 
 
 // Create a forward reference to a dummy parser, to handle mutually recursive parsers
