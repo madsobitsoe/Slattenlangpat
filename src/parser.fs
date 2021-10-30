@@ -60,17 +60,16 @@ let pString : string -> Parser<string * InputState> =
     List.ofSeq >> List.map pChar >> sequence >> mapP csToS
 
 
-
-
 // Parses an operator, eats ws on both sides
 let pOp op = (separator >>. pChar op .>> separator) <?> string op
-// let pPlus = pOp '+'
-// let pMinus = pOp '-'
+// Used for let bindings
 let pEquals = pOp '='
+// Used for parenthesizing expressions
 let pLParen = pOp '('
 let pRParen = pOp ')'
-// TODO: Figure out how to implement <= >= and <>
+let betweenParen p = (between pLParen p pRParen) |?> sprintf "( %A )" p.label
 
+// Used for binary operators separating two expressions
 let pPlus =  pChar '+' |>> (fun _ a b -> Oper (Plus, a, b))
 let pMinus = pChar '.' |>> (fun _ a b -> Oper (Minus, a, b))
 let pEQ = pChar '=' |>> (fun _ a b -> Oper (EQ, a, b))
@@ -80,8 +79,6 @@ let pLTE = keyword (pString "<=") |>> (fun _ a b -> Oper (LTE, a, b))
 let pGTE = keyword (pString ">=") |>> (fun _ a b -> Oper (GTE, a, b))
 let pNotEQ = keyword (pString "<>") |>> (fun _ a b -> Oper (NotEQ, a, b))
 
-let betweenParen p = (between pLParen p pRParen) |?> sprintf "( %A )" p.label
-
 
 let manyChars cp =
     many cp |>> csToS
@@ -89,14 +86,13 @@ let manyChars cp =
 let manyChars1 cp =
     many1 cp |>> csToS
 
-let pDQ = pChar '"' 
-
+let pDQ = pChar '"'
+// Parses an escaped newline in a string (not a literal newline)
 let pNewLine = pString "\\n" |>> (fun _ -> '\n')
 
 let pStringValue =
     pDQ >>. (manyUntil (pNewLine <|> anything) '"') |>> csToS |>> AST.String |>> Const
     <?> "string literal"
-
 
 
 
@@ -112,7 +108,7 @@ let pInt =
             | Some _ -> -i
             | None -> i
     let digits = manyChars1 pDigit
-    opt (separator >>. pChar '-') .>>. digits
+    opt (pChar '-') .>>. digits .>> separator
     |>> toSignedInt |>> Int |>> Const
     <?> "integer"
 
@@ -192,15 +188,19 @@ pExprRef := chainl1 pExprT1 pBinOp
 
 
 let pStatement =
+    separator >>.
+    (
     (keyword (pString "let") >>. pIdent .>> pEquals .>>. pExpr .>> stmtSeparator) |>> (fun (name,exp) -> SDef (name,exp))
     <|>
-    (pExpr .>> stmtSeparator |>> SExp )
+    (pExpr .>> stmtSeparator |>> SExp ))
     
 
 // For now, separate statements with ";" - this will have to change later
 let pProgram : Parser<Program * InputState> =
-    skipMany whitespace
-    >>. sepBy1 pStatement separator//(keyword (pString ";"))// separator
+//     separator
+// //    >>. sepBy1 pStatement separator
+//     >>. 
+    many1 pStatement
 
 
 let parse (program:string) : Result<Program,string> =

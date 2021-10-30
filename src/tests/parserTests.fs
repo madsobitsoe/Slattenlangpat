@@ -13,6 +13,8 @@ let testcases'const'int : TestCase<string,Result<Program,string>> list =
         "01;", Ok       [SExp (Const (Int 1))];
         "10;", Ok       [SExp (Const (Int 10))];
         "123456789;",Ok [SExp (Const (Int 123456789))];
+        "1;2;",  Ok       [SExp (Const (Int 1));SExp (Const (Int 2))];
+        "1;\n2;",  Ok       [SExp (Const (Int 1));SExp (Const (Int 2))];                
         ] |> List.map returnT
 
 
