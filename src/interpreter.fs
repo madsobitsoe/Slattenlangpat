@@ -81,9 +81,16 @@ let rec eval = function
         eval e >>= (fun res1 ->
                      apply "print" [res1])
     | Match (e1, es) ->
-        match List.tryFind (fun (e,resE) -> e1 = e) es with
-            | None -> abort (ErrBadMatch <| sprintf "couldn't match %A in %A" e1 es)
-            | Some (e,resE) -> eval resE
+        // Evaluate e1, before trying to match
+        eval e1 >>= (fun evalledE ->
+                     let (x,xRes) = List.head es
+                     eval x >>= (fun evalledX ->
+                                 if evalledE = evalledX then eval xRes else
+                                 eval (Match (e1, List.tail es))))
+                         // match List.tryFind (fun (e,resE) -> evalledE = eval e) es with
+                         // | None -> abort (ErrBadMatch <| sprintf "couldn't match %A in %A" e1 es)
+                         // | Some (e,resE) -> eval resE
+                         // )
             
     | _ -> abort (ErrBadVar "NOT IMPLEMENTED")
 

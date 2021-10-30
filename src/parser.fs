@@ -95,11 +95,13 @@ let pStringValue =
     <?> "string literal"
 
 
-
+// Booleans
 let pTrue = keyword (pString "true") |>> (fun _ -> Const (Bool true))
 let pFalse = keyword (pString "false") |>> (fun _ -> Const (Bool false))
 let pBool = pTrue <|> pFalse 
 
+
+// Integers
 let pDigit = satisfy System.Char.IsDigit "digit" //anyOf ['0'..'9']
 let pInt =
     let toSignedInt (sign, digits) =
@@ -111,6 +113,7 @@ let pInt =
     opt (pChar '-') .>>. digits .>> separator
     |>> toSignedInt |>> Int |>> Const
     <?> "integer"
+
 
 // compare char to ascii-range 'A'..'Z' @ 'a'..'z'
 let isLetter : char -> bool = (int >> fun x ->
@@ -175,10 +178,24 @@ let pPrintExpr =
     <?> "print EXPR"
 
 
+
+// Match cases
+let pMatchCase =
+    keyword (pChar '|') >>. pExpr .>> keyword (pString "->") .>> separator .>>. pExpr
+    
+let pMatchExpr =
+    keyword (pString "match") >>. pExpr .>> separator .>> keyword (pString "with") .>>.
+    many1 pMatchCase
+    |>> (fun (me, mcs) -> Match (me, mcs))
+
+
+
+// The (sub)-expression parsers
 let pExprT2 =
     betweenParen pExpr
 let pExprT1 =
-    pConst
+    pMatchExpr
+    <|> pConst
     <|> pVar
     <|> pPrintExpr
     <|> pExprT2
@@ -195,11 +212,7 @@ let pStatement =
     (pExpr .>> stmtSeparator |>> SExp ))
     
 
-// For now, separate statements with ";" - this will have to change later
 let pProgram : Parser<Program * InputState> =
-//     separator
-// //    >>. sepBy1 pStatement separator
-//     >>. 
     many1 pStatement
 
 
