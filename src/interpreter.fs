@@ -77,9 +77,23 @@ let rec eval = function
                        match operate op res1 res2 with
                        | Ok v -> Comp.ret v
                        | Error e -> abort e))
+                       
     | Call ("print", e::es) ->
         eval e >>= (fun res1 ->
                      apply "print" [res1])
+                     
+    | Call ("fst", [Const (Pair (p1,_))]) -> Comp.ret p1
+    | Call ("fst", [expr]) ->  eval expr >>= (fun evalled ->
+                                              match evalled with
+                                              | Pair (p1,_) -> Comp.ret p1
+                                              | _ -> abort (ErrBadMatch "not a pair, can't use fst"))
+                                              
+    | Call ("snd", [Const (Pair (_,p2))]) -> Comp.ret p2
+    | Call ("snd", [expr]) ->  eval expr >>= (fun evalled ->
+                                              match evalled with
+                                              | Pair (_,p2) -> Comp.ret p2
+                                              | _ -> abort (ErrBadMatch "not a pair, can't use snd"))
+    
     | Match (e1, es) ->
         // Evaluate e1, before trying to match
         eval e1 >>= (fun evalledE ->

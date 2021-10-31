@@ -37,6 +37,12 @@ let rec typeExpr : ((Expr * TypedEnv) -> Result<TypedExpr, string>) = function
             | Int _ ->  Ok (TypedConst (value, IntT))
             | String _ -> Ok (TypedConst (value, StringT))
             | Unit -> Ok (TypedConst (Unit, UnitT))
+            | Pair (v1, v2) ->
+                typeExpr (Const v1, [])
+                |> Result.bind (fun v1t ->
+                                typeExpr (Const v2, [])
+                                |> Result.bind (fun v2t ->
+                                                Ok (TypedConst (Pair (v1, v2), PairT (getType v1t,getType v2t)))))
     // For vars, we need the environment, so we can look up the type
     // (which should already be decided at this point)
     | Var name, env ->
@@ -58,6 +64,21 @@ let rec typeExpr : ((Expr * TypedEnv) -> Result<TypedExpr, string>) = function
     | Print e, env ->
         typeExpr (e, env)
         |> Result.bind (fun te -> Ok (TypedPrint (te, UnitT)))
+    | Call ("fst", [expr]), env ->
+            typeExpr (expr,env)
+            |> Result.bind (fun te ->
+                            match getType te with
+                            | PairT (actualType,_) -> Ok (TypedCall (("fst", [te]), actualType))
+                            | _ -> Error <| sprintf "Something went very wrong")
+    | Call ("snd", [expr]), env ->
+            typeExpr (expr,env)
+            |> Result.bind (fun te ->
+                            match getType te with
+                            | PairT (_,actualType) -> Ok (TypedCall (("snd", [te]), actualType))
+                            | _ -> Error <| sprintf "Something went very wrong")
+                            
+        
+            
     // Call is complicated
     | Call (name, exprs), env ->
         // First, find type all expressions/args
@@ -85,9 +106,9 @@ let rec typeExpr : ((Expr * TypedEnv) -> Result<TypedExpr, string>) = function
                         let typedCases = List.map (fun x -> typeExpr (x,env)) cases
                         flattenResultTypedExprs [] typedCases
                         |> Result.bind (fun typedCases ->
-                                        let types = List.map getType typedCases
+                                        let typedCasesTypes = List.map getType typedCases
                                         let first = getType tme
-                                        if List.forall (fun x -> x = first) types then
+                                        if List.forall (fun x -> x = first) typedCasesTypes then
                                         // Check the result-cases
                                             let typedResults = List.map (fun x -> typeExpr (x,env)) results
                                             flattenResultTypedExprs [] typedResults
@@ -100,7 +121,7 @@ let rec typeExpr : ((Expr * TypedEnv) -> Result<TypedExpr, string>) = function
                                                                 Ok (TypedMatch ((tme, []), first))
                                                             else Error <| sprintf "Types %A do not match" (List.distinct types))
 
-                                        else Error <| sprintf "Types %A do not match" (List.distinct types)))
+                                        else Error <| sprintf "Types %A do not match" (List.distinct typedCasesTypes)))
                         
         // Then we need to typecheck all the match-cases
         // Then check that all the results are the same type (which will be the type of the entire Match construct)

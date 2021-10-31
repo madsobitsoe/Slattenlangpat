@@ -50,7 +50,7 @@ let rec debug'handler input =
     match parseRes with
         | Ok prog ->
             match typeProgram prog with
-                | Error e -> printfn "Program did not pass typecheck."
+                | Error e -> printfn "ERROR: Program did not pass typecheck: %s" e
                 | Ok typedProg ->
                     printfn "Typed program:\n%A" typedProg
                     printfn "Evaluating in the interpreter..."                    

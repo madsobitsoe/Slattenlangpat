@@ -1,7 +1,7 @@
 module AST
 
 
-type Value = Bool of bool | Int of int | String of string | Unit
+type Value = Bool of bool | Int of int | String of string | Unit | Pair of Value * Value
 type VName = string
 type FName = string
 type Op = Plus | Minus | EQ | LT | GT | LTE | GTE | NotEQ
@@ -22,7 +22,7 @@ type Program = Statement list
 
 
 
-type BasicType = BoolT | IntT | StringT | UnitT | UndecidedT
+type BasicType = BoolT | IntT | StringT | UnitT | PairT of BasicType * BasicType | UndecidedT
 type TypedExpr =
     | TypedConst of Value * BasicType
     | TypedVar of VName * BasicType

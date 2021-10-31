@@ -50,7 +50,7 @@ let stmtSeparator = pChar ';' <?>  "Statement Separator" .>> separator
 
 
 // A keyword should be followed by whitespace
-let keywords = ["print";"let";"in"]
+let keywords = ["print";"let";"in";"fst";"snd"]
 // Use with another parser, like `keyword (pString "print")
 let keyword p =
     p .>> separator
@@ -173,11 +173,28 @@ let pExpr,pExprRef =
 //     <?> "let IDENTIFIER = EXPR1 in EXPR2"
 // Generate Print expressions
 
+
+let helperUnwrapConst : (Expr -> Value) = function
+        | Const v -> v
+
+let pPair =
+    betweenParen (pConst .>> separator .>> pChar ',' .>>. pConst) .>> separator
+    |>> (fun (l,r) -> Const (Pair (helperUnwrapConst l, helperUnwrapConst r)))
+    // lParen >>. pExpr .>> separator .>> pChar ',' .>> separator .>>. pExpr .>> rparen
+
 let pPrintExpr =
     keyword (pString "print") >>. pExpr |> mapP (fun x -> Call ("print", [x]))
     <?> "print EXPR"
 
+let pFst =
+    keyword (pString "fst") >>. pExpr |>> (fun x -> Call ("fst", [x]))
+let pSnd =
+    keyword (pString "snd") >>. pExpr |>> (fun x -> Call ("snd", [x]))
 
+let pBuiltInCalls =
+    pPrintExpr
+    <|> pFst
+    <|> pSnd
 
 // Match cases
 let pMatchCase =
@@ -195,9 +212,10 @@ let pExprT2 =
     betweenParen pExpr
 let pExprT1 =
     pMatchExpr
+    <|> pPair
     <|> pConst
     <|> pVar
-    <|> pPrintExpr
+    <|> pBuiltInCalls
     <|> pExprT2
 
 // Set up the actual top-level parser, so it can be used recursively by sub-parsers
