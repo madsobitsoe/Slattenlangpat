@@ -1,0 +1,6 @@
+let a = match true with
+    | false -> 0
+    | true -> 42;
+match a with
+    | 0 -> print "oh no\n"
+    | 42 -> print "The answer!\n";

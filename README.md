@@ -112,6 +112,7 @@ It can generate an Elf64-binary that sets the statuscode to a supplied value, an
 
 ## Syntax
 
+``` shell
 Program ::= Stmts
 Stmts ::= Stmt ';'
         | Stmt ';' Stmts
@@ -143,3 +144,43 @@ Exprs ::=
 MCase  '|' Expr '->' Expr 
 MCases ::= MCase
         | MCase MCases
+```
+
+### Elaborations
+#### ident
+#### Binary Operations
+`a > b` is syntactic sugar for `b < a`.  
+`a >= b` is syntactic sugar for `b <= a`.  
+
+#### Match expressions
+The language will have match-expressions instead of `if-else`.
+Currently the semantics are wild (and not at all final):  
+In a match-expression, the following happens:  
+- The expression between `match` and `with` is evaluated and typed. 
+- All the left-hand-side expressions of the match-cases are evaluated and typed, then checked to be of the same type as the expression to match with.
+- All the right-hand-side expressions are typed, then checked to be of the same type.
+
+There is no structural matching, only equality.
+There is no bindings on LHS of a match-case. LHS is an expression that will be evaluated and checked for equality. 
+
+``` shell
+let a = 42; 
+match 41 + 1 with
+| 41 -> print "no match\n"
+| 41+2 -> print "no match\n"
+| a -> print "this will match\n";
+```
+
+There are no checks of exhaustive matching, i.e. it is very possible to write a typed match-expression that will fail at runtime. 
+``` shell
+match true with | false -> print "oh boy\n";
+```
+
+
+As match-expressions evaluate to some value, they can be used for assignments.
+The following will print `"The answer!"` with a newline:
+``` shell
+let a = match true with | false -> 0 | true -> 42; match a with | 0 -> print "oh no\n" | 42 -> print "The answer!\n";
+```
+
+

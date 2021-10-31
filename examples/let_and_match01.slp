@@ -1,0 +1,5 @@
+let a = 42; 
+match 41 + 1 with
+    | 41 -> print "no match\n"
+    | 41+2 -> print "no match\n"
+    | a -> print "this will match\n";

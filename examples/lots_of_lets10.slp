@@ -1,11 +1,11 @@
-let x1 = 1 in
-let x2 = 2 in
-let x3 = 3 in
-let x4 = 4 in
-let x5 = 5 in
-let x6 = 6 in
-let x7 = 7 in
-let x8 = 8 in
-let x9 = 9 in
-let x10 = 10 in
-x10
+let x1 = 1;
+let x2 = 2;
+let x3 = 3;
+let x4 = 4;
+let x5 = 5;
+let x6 = 6;
+let x7 = 7;
+let x8 = 8;
+let x9 = 9;
+let x10 = 10;
+x10;
